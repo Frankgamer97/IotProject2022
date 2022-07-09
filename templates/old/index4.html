@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Parameters {% endblock %}</h1>
+{% for message in messages %}
+
+
+
+
+        <div class='message'>
+            <p>Device : {{ message['Device'] }}</p>
+            <p>lat : {{ message['GPS'][0] }}</p>
+            <p>long : {{ message['GPS'][1] }}</p>
+            <p>RSSI : {{ message['RSSI'] }}</p>
+            <p>Temperature : {{ message['Temperature'] }}</p>
+            <p>Humidity : {{ message['Humidity'] }}</p>
+            <p>Gas: {{ message['Gas'] }}</p>
+            <p>AQI : {{ message['AQI'] }}</p>
+        </div>
+    {% endfor %}
+{% endblock %}
