@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+       h1 {
+        text-align:center;
+       }
+{% endblock %}
+
+
+{% block title %}   ESP32  {% endblock %}
+
+{% block inner %}
+
+{% for message in messages %}
+
+
+
+
+        <table class="table" id="myTable">
+          <thead>
+            <tr>
+              <th scope="col">Device</th>
+              <th scope="col">latitude</th>
+              <th scope="col">longitude</th>
+              <th scope="col">WIFI RSSI</th>
+              <th scope="col">Temperature</th>
+              <th scope="col">Humidity</th>
+              <th scope="col">Gas Detection</th>
+              <th scope="col">AQI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ message['Device'] }}</td>
+              <td> {{ message['GPS'][0] }}</td>
+              <td> {{ message['GPS'][1] }}</td>
+              <td> {{ message['RSSI'] }}</td>
+              <td> {{ message['Temperature'] }}</td>
+              <td>{{ message['Humidity'] }}</td>
+              <td>{{ message['Gas'] }}</td>
+              <td>{{ message['AQI'] }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+
+
+    {% endfor %}
+
+<!--Search: <input type="text" id="search_form_input"></input>-->
+
+<div id="place_for_suggestions"></div>
+{% endblock %}
+
+
+{% block scripts1 %}
+
+<script>
+
+setInterval(                               //Periodically 
+  function()
+  {
+    $.ajax({
+      url: "/tables",
+      type: "get",
+      data: {},
+      success: function(response) {
+        $("#place_for_suggestions").html(response);
+      },
+      error: function(xhr) {
+        //Do Something to handle error
+      }
+    });
+  },
+  2500);    
+
+  
+/*
+$("#search_form_input").keyup(function(){
+    var text = $(this).val();
+
+    $.ajax({
+      url: "/suggestions",
+      type: "get",
+      data: {jsdata: text},
+      success: function(response) {
+        $("#place_for_suggestions").html(response);
+      },
+      error: function(xhr) {
+        //Do Something to handle error
+      }
+    });
+});
+*/
+</script>
+{% endblock %}
+
+
+

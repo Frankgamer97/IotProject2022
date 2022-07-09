@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Parameters {% endblock %}</h1>
+    {% for message in messages %}
+        <div class='message'>
+            <p>SAMPLE FREQUENCY : {{ message['sample_frequency'] }}</p>
+            <p>MIN GAS VALUE : {{ message['min_gas_value'] }}</p>
+            <p>MAX GAS VALUE : {{ message['max_gas_value'] }}</p>
+        </div>
+    {% endfor %}
+{% endblock %}

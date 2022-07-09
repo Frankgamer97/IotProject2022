@@ -1,0 +1,54 @@
+{% extends "bootstrap/base.html" %}
+{% block html_attribs %} lang="en"{% endblock %}
+{% block styles %}
+<style>
+    {% block styles1 %}
+
+    {% endblock %}
+    .message {
+        padding: 10px;
+        margin: 5px;
+        background-color: #f3f3f3
+    }
+    nav a {
+        color: #d64161;
+        font-size: 3em;
+        margin-left: 50px;
+        text-decoration: none;
+    }
+
+    .alert {
+        padding: 20px;
+        margin: 5px;
+        color: #970020;
+        background-color: #ffd5de;
+    }
+
+
+</style>
+{{super()}}
+
+{% endblock %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">IOT Project</a>
+        <a href="{{ url_for('setparams') }}">Set Parameters</a>
+        <a href="{{ url_for('getsensor') }}">ParamJson</a>
+    </nav>
+    <hr>
+
+       <h1>{% block title %}  Base {% endblock %}</h1>
+
+{% block inner %} {% endblock %}
+{% endblock %}
+</body>
+{% block scripts %}
+{{super()}}
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+{% endblock %}

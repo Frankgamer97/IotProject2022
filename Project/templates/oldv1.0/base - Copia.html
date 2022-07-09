@@ -1,0 +1,84 @@
+{% extends "bootstrap/base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+{% block html_attribs %} lang="en"{% endblock %}
+{% block styles %}
+<style>
+
+    h1 {
+        text-align:center;
+    }
+
+    .message {
+        padding: 10px;
+        margin: 5px;
+        background-color: #f3f3f3
+    }
+    nav a {
+        color: #d64161;
+        font-size: 3em;
+        margin-left: 50px;
+        text-decoration: none;
+    }
+
+    .alert {
+        padding: 20px;
+        margin: 5px;
+        color: #970020;
+        background-color: #ffd5de;
+    }
+
+
+</style>
+{{super()}}
+
+{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} {% endblock %} - FlaskApp</title>
+    <style>
+        .message {
+            padding: 10px;
+            margin: 5px;
+            background-color: #f3f3f3
+        }
+        nav a {
+            color: #d64161;
+            font-size: 3em;
+            margin-left: 50px;
+            text-decoration: none;
+        }
+
+        .alert {
+            padding: 20px;
+            margin: 5px;
+            color: #970020;
+            background-color: #ffd5de;
+        }
+
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">IOT Project</a>
+        <a href="{{ url_for('setparams') }}">Set Parameters</a>
+        <a href="{{ url_for('getsensor') }}">ParamJson</a>
+        <a href="#">About</a>
+    </nav>
+
+
+    <hr>
+    <div class="content">
+        {% for M in get_flashed_messages() %}
+            <div class="alert">{{ M }}</div>
+        {% endfor %}
+        {% block cazzo %}sss {% endblock %}
+    </div>
+</body>
+
+{% block scripts %}
+{{super()}}
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+{% endblock %}
+
+</html>
