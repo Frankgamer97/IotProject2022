@@ -14,9 +14,39 @@ except ImportError:
 
 from markupsafe import escape
 from jinja2.utils import generate_lorem_ipsum
-from flask import Flask, make_response, request, redirect, url_for, abort, session, jsonify, render_template
+from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
 
+
+post_parameters = {'sample_frequency': "5000",
+             'min_gas_value': "0",
+             'max_gas_value': "100",
+             'protocol': "0"}
+
+
+listvalues = []#[{'Device': "100",
+             #'GPS': [100,11],
+             #'Timestamp': "100",
+             #'RSSI': "100",
+            #'Temperature': "100",
+            #'Humidity': "100",
+            #'Gas': "100",
+            #'AQI': "100"},
+            #   
+            #{'Device': "100",
+            # 'GPS': [100,2],
+            # 'Timestamp': "100",
+            # 'RSSI': "100",
+            #'Temperature': "100",
+            #'Humidity': "100",
+            #'Gas': "100",
+            #'AQI': "100"}]
+
+
+messages = [{'sample_frequency': '10000',
+             'min_gas_value': '0',
+             'max_gas_value':'100'}
+            ]
 
 lista=[0]
 def generator_lista():
@@ -50,9 +80,11 @@ Bootstrap(app)
 
 
 # get name value from query string and cookie
-@app.route('/')
-def index():
-    return render_template('index.html')
+#@app.route('/')
+#def index():
+#    return render_template('index.html')
+
+
 
 @app.route('/hello')
 def hello():
@@ -253,13 +285,120 @@ def redirect_back(default='hello', **kwargs):
     return redirect(url_for(default, **kwargs))
 
 
-@app.route('/update-sensor', methods=['GET', 'POST'])
+#@app.route('/update-sensor', methods=['GET', 'POST'])
+#def starting_url():
+#    json_data = request.json
+#    a_value = json_data["MAC"]
+#    lista.append(a_value)
+#
+#    return values()
+
+
+
+
+
+
+
+@app.route('/')
+def index():
+    return render_template('index3.html', messages=listvalues)
+
+
+
+@app.route('/base')
+def base():
+    return render_template('base.html', messages=listvalues)
+
+
+
+
+
+
+@app.route("/get-sensor/", methods=('GET', 'POST'))
+def getsensor():
+    return jsonify(
+        sample_frequency=post_parameters["sample_frequency"],
+        min_gas_value=post_parameters["min_gas_value"],
+        max_gas_value=post_parameters["max_gas_value"],
+        protocol=post_parameters["protocol"],
+    )
+
+
+@app.route('/set-parameters/', methods=('GET', 'POST'))
+def setparams():
+    if request.method == 'POST':
+        
+        sample_frequency= request.form['sample_frequency']
+        min_gas_value = request.form['min_gas_value']
+        max_gas_value = request.form['max_gas_value']
+        protocol = request.form['protocol']
+        if not sample_frequency:
+            flash('sample_frequency is required!')
+        elif not min_gas_value:
+            flash('min_gas_value is required!')
+        elif not max_gas_value:
+            flash('max_gas_value is required!')
+        elif not protocol:
+            flash('protocol is required!')
+        else:
+            post_parameters['sample_frequency']= sample_frequency
+            post_parameters['min_gas_value']= min_gas_value
+            post_parameters['max_gas_value']= max_gas_value
+            post_parameters['protocol']= protocol
+            flash('Parameters updated')
+            #return redirect(url_for('getsensor'))
+
+    return render_template('set_parameters.html')
+
+
+
+
+
+
+
+@app.route('/update-sensor/', methods=['GET', 'POST'])
 def starting_url():
     json_data = request.json
-    a_value = json_data["sensor"]
-    lista.append(a_value)
+    mac = json_data["MAC"]
+    GPS= json_data["GPS"]
+    rssi = json_data["RSSI"]
+    Temperature = json_data["Temperature"]
+    Humidity = json_data["Humidity"]
+    Gas = json_data["Gas"]
+    AQI = json_data["AQI"]
+    
+    listvalues.append({'Device': mac,
+                        'GPS': GPS,
+                        'RSSI': rssi,
+                        'Temperature': Temperature,
+                        'Humidity': Humidity,
+                        'Gas': Gas,
+                        'AQI': AQI
+                        }
+                       )
+    return "ok"
+            
 
-    return values()
+
+@app.route('/create/', methods=('GET', 'POST'))
+def create():
+    if request.method == 'POST':
+        sample_frequency= request.form['sample_frequency']
+        min_gas_value = request.form['min_gas_value']
+        max_gas_value = request.form['max_gas_value']
+
+        if not sample_frequency:
+            flash('sample_frequency is required!')
+        elif not min_gas_value:
+            flash('Content is required!')
+        elif not max_gas_value:
+            flash('Content is required!')
+        else:
+            messages.append({'sample_frequency': sample_frequency, 'min_gas_value': min_gas_value, 'max_gas_value': max_gas_value})
+            return redirect(url_for('index'))
+
+    return render_template('create.html')
+
 
 
 

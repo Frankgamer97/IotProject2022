@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">IOT Project</a>
+        <a href="{{ url_for('setparams') }}">Set Parameters</a>
+        <a href="{{ url_for('getsensor') }}">ParamJson</a>
+    </nav>
+    <hr>
+
+       <h1>{% block title %} Set Parameters {% endblock %}</h1>
+    <div class="content">
+        {% for M in get_flashed_messages() %}
+            <div class="alert">{{ M }}</div>
+        {% endfor %}
+
+    <form method="post">
+        <label for="sample_frequency">Sample Frequency</label>
+        <br>
+        <input type="text" name="sample_frequency"
+               placeholder="3000"
+               value="{{ request.form['sample_frequency'] }}"></input>
+        <br>
+
+        <label for="min_gas_value">Min gas value</label>
+        <br>
+        <input type="text" name="min_gas_value"
+               placeholder="0"
+               value="{{ request.form['min_gas_value'] }}"></input>
+        <br>
+
+        <label for="max_gas_value">Max gas value</label>
+        <br>
+        <input type="text" name="max_gas_value"
+               placeholder="100"
+               value="{{ request.form['max_gas_value'] }}"></input>
+        <br>
+
+        <label for="protocol">Protocol</label>
+        <br>
+        <input type="text" name="protocol"
+               placeholder="0: HTTP / 1: CoAP / 2: MQTT"
+               value="{{ request.form['protocol'] }}"></input>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+</div></body>
+{% endblock %}
