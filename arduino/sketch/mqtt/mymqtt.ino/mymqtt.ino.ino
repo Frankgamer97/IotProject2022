@@ -2,8 +2,8 @@
 #include <PubSubClient.h>
 #include <DHT.h>
 
-#define PIN_DHT 15
-#define DEFAULT_SENSE_FREQUENCY 10000
+#define DHTPIN 15
+#define DEFAULT_SENSE_FREQUENCY 5000
 #define SERIAL_BAUD_RATE 9600
 
 char* SSID     = "TIM-Salentu";
@@ -17,9 +17,9 @@ boolean resultMQTT = false;
 
 const char* temp_topic="iotProject2022/temp";
 const char* hum_topic="iotProject2022/hum";
-const char* config_topic="iotProject2022/config";
+const char* config_topic="Iot/2022/Project/config";
 
-DHT dht(PIN_DHT, DHT22);
+DHT dht(DHTPIN, DHT22);
 PubSubClient clientMQTT; 
 WiFiClient clientWiFi;
 
@@ -79,15 +79,17 @@ boolean publishData(const char* topic, float value) {
 }
 
 void loop() {
-  
-  /*tempValue=dht.readTemperature();
+  /*
+  tempValue=dht.readTemperature();
   Serial.println(tempValue);
   resultMQTT=publishData(temp_topic,tempValue);
 
   humValue=dht.readHumidity();
   Serial.println(humValue);
-  resultMQTT=publishData(hum_topic,humValue);*/
+  resultMQTT=publishData(hum_topic,humValue);
+  
+  
+  */
   clientMQTT.loop();
   delay(DEFAULT_SENSE_FREQUENCY);
-  
 }
