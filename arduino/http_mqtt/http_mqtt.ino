@@ -64,6 +64,15 @@ PubSubClient clientMQTT;
 WiFiClient clientWiFi;
 
 /* UTILITIES FUNCTIONS, GET AND SET PARAMETERS */
+String getProtocol(){
+  if(protocol == 0)
+    return "HTTP";
+  else if(protocol == 1)
+    return "COAP";
+  else if(protocol == 2)
+    return "MQTT";
+  return "HTTP" ;
+}
 
 float getGPS(int coord){
   if (coord == 0)
@@ -230,6 +239,7 @@ String getJson()
         root["Gas"] = getGas();
         root["AQI"] = getAQI();
         root["MAC"] = WiFi.macAddress();
+        root["C_Protocol"] = getProtocol();
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
@@ -329,11 +339,12 @@ void loop() {
     Serial.print("Timer set to ");
     Serial.println(sample_frequency);
 
-      String page = "";
-      page = setParametersFromServer(serverNameGet);
+      
 
       if (protocol==0)
       {
+        String page = "";
+        page = setParametersFromServer(serverNameGet);
         Serial.println("Using HTTP");
         HTTPost(serverNamePost,getJson());
       }

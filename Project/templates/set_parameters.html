@@ -14,10 +14,12 @@
 {% block inner %}
 
     <div class="content">
-        
-        {% for M in get_flashed_messages() %}
-            <div class="alert">{{ M }}</div>
+        {% with messages = get_flashed_messages(with_categories=true)%}
+        {% for C,M in messages %}
+            <div class="{{ C }}">{{ M }}</div>
         {% endfor %}
+        {% endwith%}
+        
 
     </div>
   
