@@ -21,6 +21,7 @@
 #define MQ2PIN 34
 
 #define AQInum 5
+
 const char ssid[] = "TIM-Salentu";//"TIM-03859326";
 const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
@@ -38,9 +39,8 @@ const char* config_topic="Iot/2022/Project/config";
 //WifiLocation location(googleApiKey);
 
 //Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.1.31:5000/update-sensor/";
-//const char* serverNameGet = "http://www.zeppelinmaker.it/helloworld.txt";
-const char* serverNameGet = "http://192.168.1.31:5000/get-sensor/";
+const char* serverNamePost = "http://192.168.1.30:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.1.30:5000/get-sensor/";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
@@ -56,7 +56,7 @@ float gas = 0;
 float gps = 0;
 float rssi = 0;
 
-int protocol = 2; /* {0: http, 1: coap, 2: mqtt */
+int protocol = 0; /* {0: http, 1: coap, 2: mqtt */
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
