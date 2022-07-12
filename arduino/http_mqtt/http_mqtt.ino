@@ -343,17 +343,20 @@ void loop() {
 
       if (protocol==0)
       {
+	Serial.println();
+	Serial.println("Using HTTP");
         String page = "";
         page = setParametersFromServer(serverNameGet);
-        Serial.println("Using HTTP");
         HTTPost(serverNamePost,getJson());
       }
       else if (protocol==1)
       {
+	Serial.println();
         Serial.println("Using CoAP");
       }      
       else if (protocol==2)
       {
+	Serial.println();
         Serial.println("Using MQTT");
         if(!MqttConfig)
           MqttConfiguration();

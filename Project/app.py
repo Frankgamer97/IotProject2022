@@ -224,9 +224,6 @@ def setparams():
 #flask run --host=0.0.0.0
 
 if __name__ == '__main__':
-    def _run():
-        app.run(host='0.0.0.0',port=5000)
-
 
     app.run(host='0.0.0.0',port=5000)
     mqtt_handler.mqtt_thread.join()
