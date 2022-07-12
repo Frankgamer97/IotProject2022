@@ -175,23 +175,31 @@ def setparams():
         max_gas_value = request.form['max_gas_value']
         protocol = request.form.get('comp_select')
 
+        is_ok = True
+
         if not sample_frequency:
-            flash('frequency is required!'.upper(), "alert")
-        elif not is_int(sample_frequency):
+            sample_frequency=post_parameters["sample_frequency"]# flash('frequency is required!'.upper(), "alert")
+        if not is_int(sample_frequency):
+            is_ok = False
             flash('frequency must be a number!'.upper(), "alert")
-        elif not int(sample_frequency) >= 0:
+        if not int(sample_frequency) >= 0:
+            is_ok = False
             flash('negative sample frequency!'.upper(), "alert")
-        elif not min_gas_value:
-            flash('min gas value is required!'.upper(), "alert")
-        elif not is_int(min_gas_value):
+        if not min_gas_value:
+            min_gas_value = post_parameters["min_gas_value"]# flash('min gas value is required!'.upper(), "alert")
+        if not is_int(min_gas_value):
+            is_ok = False
             flash('min gas value must be a number!'.upper(), "alert")
-        elif not max_gas_value:
-            flash('max gas value is required!'.upper(), "alert")
-        elif not is_int(max_gas_value):
+        if not max_gas_value:
+            max_gas_value = post_parameters["max_gas_value"]# flash('max gas value is required!'.upper(), "alert")
+        if not is_int(max_gas_value):
+            is_ok = False
             flash('max gas value  must be a number!'.upper(), "alert")
-        elif not (int(min_gas_value) < int(max_gas_value)):
+        if not (int(min_gas_value) < int(max_gas_value)):
+            is_ok = False
             flash('gas value range is incorrect!'.upper(), "alert")
-        else:
+        
+        if is_ok:
             post_parameters['sample_frequency']= sample_frequency
             post_parameters['min_gas_value']= min_gas_value
             post_parameters['max_gas_value']= max_gas_value
@@ -202,6 +210,9 @@ def setparams():
                 pass
             if current_protocol == "MQTT":
                 mqtt_handler.update_config(post_parameters)
+            
+            if current_protocol == "COAP":
+                pass
                 
             flash('Parameters updated'.upper(), "success")
 
