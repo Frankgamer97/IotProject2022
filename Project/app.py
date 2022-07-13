@@ -1,41 +1,18 @@
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
 
-from threading import Thread
-
 from Mqtt import MqttHandler
 
 from utilities import get_data, is_int, get_protocol, influxdb_post
 import os
 
 
-
-
-
 current_protocol = "HTTP"
+listvalues = []
 post_parameters = {'sample_frequency': "5000",
              'min_gas_value': "0",
              'max_gas_value': "10000",
              'protocol': "0"}
-
-
-listvalues = []#[{'Device': "100",
-             #'GPS': [100,11],
-             #'Timestamp': "100",
-             #'RSSI': "100",
-            #'Temperature': "100",
-            #'Humidity': "100",
-            #'Gas': "100",
-            #'AQI': "100"},
-            #   
-            #{'Device': "100",
-            # 'GPS': [100,2],
-            # 'Timestamp': "100",
-            # 'RSSI': "100",
-            #'Temperature': "100",
-            #'Humidity': "100",
-            #'Gas': "100",
-            #'AQI': "100"}]
 
 
 
@@ -78,8 +55,8 @@ def updatesensor():
     #Gas = json_data["Gas"]
     #AQI = json_data["AQI"]
 
-    #global current_protocol
-    #current_protocol = json_data["C_Protocol"]
+    global current_protocol
+    current_protocol = json_data["C_Protocol"]
     
     json_data["Time"] = get_data()
     if len(listvalues)>7:
@@ -95,7 +72,7 @@ def updatesensor():
                       #  'Protocol': current_protocol
                       #  }
                        )
-    influxdb_post(json_data) # IMPORTANTE!!!!
+    # influxdb_post(json_data) # IMPORTANTE!!!!
 
     
     return "ok"
@@ -153,7 +130,7 @@ def setparams():
             post_parameters['max_gas_value']= max_gas_value
             post_parameters['protocol']= get_protocol(protocol)
 
-
+            
             if current_protocol == "HTTP":
                 pass
             if current_protocol == "MQTT":

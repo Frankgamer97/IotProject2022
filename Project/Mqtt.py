@@ -48,7 +48,7 @@ class MqttHandler:
             json_data["Time"] = get_data()
             
             MqttHandler.list_values.insert(0,json_data) 
-            influxdb_post(json_data)
+            # influxdb_post(json_data)
         except Exception as e:
             print("[MQTT] get_data error")
             print()
