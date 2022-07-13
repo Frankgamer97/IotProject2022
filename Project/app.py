@@ -117,10 +117,6 @@ def tables():
 
     return render_template('tables.html', messages=listvalues)
 
-
-
-
-
 # esp32 post its value to the list listvalues
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
@@ -226,7 +222,7 @@ def setparams():
 if __name__ == '__main__':
 
     app.run(host='0.0.0.0',port=5000)
-    mqtt_handler.mqtt_thread.join()
+    mqtt_handler.mqtt_thread.join(0)
     #  from livereload import Server
     #  server = Server(app.wsgi_app)
     #  server.serve(host = '0.0.0.0',port=5000)

@@ -25,25 +25,12 @@ class MqttHandler:
         MqttHandler.influxdb_post = influxdb_post
 
         self.mqtt_thread = Thread(target=MqttHandler.bind_updating, args=(self,))
+        self.mqtt_thread.daemon=True
 
         self.mqtt_thread.start()
 
-
-    # def subscribe_updates(self):
-    #     print("[MQTT] BIND UPDATING")
-    #     print(self.topics[0])
-    #     print(self.qos)
-    #     print(self.server_name)
-    #     print()
-    #     subscribe.callback(MqttHandler.get_data, self.topics[0], self.qos, hostname=self.server_name)
-
     @staticmethod
     def bind_updating(mqtt_handler):
-        print("[MQTT] BIND UPDATING")
-        print(mqtt_handler.topics[0])
-        print(mqtt_handler.qos)
-        print(mqtt_handler.server_name)
-        print()        
         subscribe.callback(MqttHandler.get_data, mqtt_handler.topics[0], mqtt_handler.qos, hostname=mqtt_handler.server_name)
 
     @staticmethod
@@ -57,13 +44,11 @@ class MqttHandler:
             MqttHandler.list_values.append(res) 
             # MqttHandler.influxdb_post(res)
         except Exception as e:
-            print("ERRORE")
-            print()
+            print("[MQTT] get_data error")
             print()
             print(e)
             print()
-            print()
 
     def update_config(self, params):
-        print("PUBLUSHING CONFIGS")
+        print("[MQTT] update configs")
         publish.single(self.topics[1], str(params), qos=self.qos, hostname=self.server_name)
