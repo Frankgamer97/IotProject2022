@@ -4,7 +4,6 @@
   <table class="table" id="myTable">
     <thead>
       <tr>
-        <th scope="col">Time</th>
         <th scope="col">Device</th>
         <th scope="col">latitude</th>
         <th scope="col">longitude</th>
@@ -17,7 +16,6 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ message['Time'].strftime("%Y-%m-%d %H:%M:%S") }}</td>
         <td>{{ message['MAC'] }}</td>
         <td> {{ message['GPS'][0] }}</td>
         <td> {{ message['GPS'][1] }}</td>

@@ -1,16 +1,16 @@
+from datetime import datetime
+
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
 
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 from threading import Thread
+
 
 from Mqtt import MqttHandler
 
-from utilities import get_data, is_int, get_protocol, influxdb_post
 import os
-
-
-
-
 
 current_protocol = "HTTP"
 post_parameters = {'sample_frequency': "5000",
@@ -37,9 +37,60 @@ listvalues = []#[{'Device': "100",
             #'Gas': "100",
             #'AQI': "100"}]
 
+def is_int(data):
+    try:
+        isinstance(int(data), int)
+        return 1
+    except:
+        return 0
+    
+def get_protocol(prot):
+    if prot=="HTTP":
+        return 0
+    elif prot=="COAP":
+        return 1
+    elif prot=="MQTT":
+        return 2
+
+def influxdb_post(json_data):
+    
+    token = "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag=="
+    org = "primiarmi.pac@gmail.com"
+    bucket = "esp32"
+
+    client = InfluxDBClient(url="https://europe-west1-1.gcp.cloud2.influxdata.com", token=token, org=org)
+
+    write_api = client.write_api(write_options=SYNCHRONOUS)
 
 
-mqtt_handler = MqttHandler(listvalues)
+    mac = json_data["MAC"]
+    GPS= json_data["GPS"]
+    rssi = json_data["RSSI"]
+    Temperature = json_data["Temperature"]
+    Humidity = json_data["Humidity"]
+    Gas = json_data["Gas"]
+    AQI = json_data["AQI"]
+    
+    print(json_data)
+    
+    point = Point("mem") \
+        .tag("Device", mac) \
+        .tag("GPS", GPS) \
+        .field("RSSI", rssi) \
+        .field("Temperature", Temperature) \
+        .field("Humidity", Humidity) \
+        .field("Gas", Gas) \
+        .field("AQI", AQI) \
+        .time(datetime.utcnow(), WritePrecision.NS)
+
+    #point = Point("my_measurement").tag("location", "Prague").field("temperature", 25.3)
+    write_api.write(bucket, org, point)
+ 
+    return "ok"
+
+
+
+mqtt_handler = MqttHandler(listvalues, influxdb_post)
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
@@ -70,32 +121,29 @@ def tables():
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
     json_data = request.json
-    #mac = json_data["MAC"]
-    #GPS= json_data["GPS"]
-    #rssi = json_data["RSSI"]
-    #Temperature = json_data["Temperature"]
-    #Humidity = json_data["Humidity"]
-    #Gas = json_data["Gas"]
-    #AQI = json_data["AQI"]
+    mac = json_data["MAC"]
+    GPS= json_data["GPS"]
+    rssi = json_data["RSSI"]
+    Temperature = json_data["Temperature"]
+    Humidity = json_data["Humidity"]
+    Gas = json_data["Gas"]
+    AQI = json_data["AQI"]
 
-    #global current_protocol
-    #current_protocol = json_data["C_Protocol"]
+    global current_protocol
     
-    json_data["Time"] = get_data()
-    if len(listvalues)>7:
-        del listvalues[-1]
-    listvalues.insert(0, json_data
-                      #{'MAC': mac,
-                      #  'GPS': GPS,
-                      #  'RSSI': rssi,
-                      #  'Temperature': Temperature,
-                      #  'Humidity': Humidity,
-                      #  'Gas': Gas,
-                      #  'AQI': AQI,
-                      #  'Protocol': current_protocol
-                      #  }
+    current_protocol = json_data["C_Protocol"]
+    
+    listvalues.append({'MAC': mac,
+                        'GPS': GPS,
+                        'RSSI': rssi,
+                        'Temperature': Temperature,
+                        'Humidity': Humidity,
+                        'Gas': Gas,
+                        'AQI': AQI,
+                        'Protocol': current_protocol
+                        }
                        )
-    influxdb_post(json_data) # IMPORTANTE!!!!
+    # influxdb_post(json_data) # IMPORTANTE!!!!
 
     
     return "ok"

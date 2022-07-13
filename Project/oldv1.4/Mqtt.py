@@ -2,14 +2,11 @@ from threading import Thread
 from paho.mqtt import publish, subscribe
 import ast
 
-from utilities import get_data, influxdb_post
-
-
 class MqttHandler:
     list_values = None
     influxdb_post = None
 
-    def __init__(self, list_values, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
+    def __init__(self, list_values, influxdb_post, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
         self.server_name = server_name
         self.user = user
         self.password = password
@@ -25,6 +22,7 @@ class MqttHandler:
         self.qos=qos # for publish & subscribe
         
         MqttHandler.list_values = list_values
+        MqttHandler.influxdb_post = influxdb_post
 
         self.mqtt_thread = Thread(target=MqttHandler.bind_updating, args=(self,))
         self.mqtt_thread.daemon=True
@@ -41,14 +39,10 @@ class MqttHandler:
         print("[MQTT] new data received")
 
         try:
-            json_data = ast.literal_eval(message.payload.decode()) 
-            if len(MqttHandler.list_values)>7:
-                del MqttHandler.list_values[-1]
+            res = ast.literal_eval(message.payload.decode()) 
 
-            json_data["Time"] = get_data()
-            
-            MqttHandler.list_values.insert(0,json_data) 
-            influxdb_post(json_data)
+            MqttHandler.list_values.append(res) 
+            # MqttHandler.influxdb_post(res)
         except Exception as e:
             print("[MQTT] get_data error")
             print()
