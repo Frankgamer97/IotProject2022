@@ -94,9 +94,8 @@ void setup() {
 }
 
 void loop() {
-  delay(5000);
   update_values(50,30);
-  
+  delay(5000);
 }
 /*
 if you change LED, req/res test with coap-client(libcoap), run following.

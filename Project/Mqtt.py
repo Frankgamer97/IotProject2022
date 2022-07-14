@@ -2,7 +2,8 @@ from threading import Thread
 from paho.mqtt import publish, subscribe
 import ast
 
-from utilities import get_data, influxdb_post
+from utility import SERVER_MEASUREMENTS
+from utility import get_time, influxdb_post
 
 
 class MqttHandler:
@@ -33,6 +34,7 @@ class MqttHandler:
 
     @staticmethod
     def bind_updating(mqtt_handler):
+        print("[MQTT] Bind updates")
         subscribe.callback(MqttHandler.get_data, mqtt_handler.topics[0], mqtt_handler.qos, hostname=mqtt_handler.server_name)
 
     @staticmethod
@@ -42,10 +44,10 @@ class MqttHandler:
 
         try:
             json_data = ast.literal_eval(message.payload.decode()) 
-            if len(MqttHandler.list_values)>7:
+            if len(MqttHandler.list_values) > SERVER_MEASUREMENTS:
                 del MqttHandler.list_values[-1]
 
-            json_data["Time"] = get_data()
+            json_data["Time"] = get_time()
             
             MqttHandler.list_values.insert(0,json_data) 
             # influxdb_post(json_data)

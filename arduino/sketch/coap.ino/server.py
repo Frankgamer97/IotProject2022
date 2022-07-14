@@ -11,6 +11,16 @@ class Hello(resource.ObservableResource):
     def __init__(self):
         super(Hello, self).__init__()
         self.mydata=b"0"
+        self.handle = True
+
+
+    def update_observation_count(self, count):
+        if count and self.handle is None:
+            print("Starting the clock")
+            self.handle = True
+        if count == 0 and self.handle:
+            print("Stopping the clock")
+            self.handle = False            
 
     async def render_get(self, request):
         print("[COAP] GET REQUEST RECEIVED: ")
@@ -26,7 +36,9 @@ class Hello(resource.ObservableResource):
         except Exception as e:
             print("[COAP] POST REQUEST ERROR")
 
-        self.updated_state()
+        if self.handle:
+            self.updated_state()
+        
         return aiocoap.Message(code= aiocoap.CHANGED)
 def main():
     # Resource tree creation
@@ -41,4 +53,5 @@ def main():
     asyncio.get_event_loop().run_forever()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
+    # asyncio.run(main())

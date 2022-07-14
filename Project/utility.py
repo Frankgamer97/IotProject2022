@@ -5,7 +5,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import pytz
 import os
 
-def get_data():
+SERVER_MEASUREMENTS = 7
+
+def get_time():
 
     #utc_dt = datetime.now(timezone.utc) # UTC time
     #dt = utc_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")

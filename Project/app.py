@@ -2,8 +2,11 @@ from flask import Flask, make_response, request, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
 
 from Mqtt import MqttHandler
+from Coap import CoapHandler
 
-from utilities import get_data, is_int, get_protocol, influxdb_post
+from utility import SERVER_MEASUREMENTS
+from utility import get_time, is_int, get_protocol, influxdb_post
+
 import os
 
 
@@ -17,6 +20,7 @@ post_parameters = {'sample_frequency': "5000",
 
 
 mqtt_handler = MqttHandler(listvalues)
+coap_handler = CoapHandler(listvalues)
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
@@ -58,8 +62,8 @@ def updatesensor():
     global current_protocol
     current_protocol = json_data["C_Protocol"]
     
-    json_data["Time"] = get_data()
-    if len(listvalues)>7:
+    json_data["Time"] = get_time()
+    if len(listvalues) > SERVER_MEASUREMENTS:
         del listvalues[-1]
     listvalues.insert(0, json_data
                       #{'MAC': mac,
@@ -152,6 +156,7 @@ if __name__ == '__main__':
 
     app.run(host='0.0.0.0',port=5000)
     mqtt_handler.mqtt_thread.join(0)
+    coap_handler.coap_thread.join(0)
     #  from livereload import Server
     #  server = Server(app.wsgi_app)
     #  server.serve(host = '0.0.0.0',port=5000)
