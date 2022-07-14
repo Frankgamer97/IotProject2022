@@ -7,9 +7,11 @@
 #include <DHT.h>
 #include <WiFi.h>
 #include <PubSubClient.h> //https://github.com/plapointe6/EspMQTTClient
+#include <WiFiUdp.h>
+#include <coap-simple.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h> //v5.13.5
-#include "MeanFilterLib.h" //https://github.com/luisllamasbinaburo/Arduino-Meanfilter
+#include <MeanFilterLib.h> //https://github.com/luisllamasbinaburo/Arduino-Meanfilter
 //#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
 
 
@@ -22,6 +24,8 @@
 
 #define AQInum 5
 
+void callback_response(CoapPacket &packet, IPAddress ip, int port);
+
 const char ssid[] = "TIM-Salentu";//"TIM-03859326";
 const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
@@ -31,10 +35,16 @@ int MQTT_PORT=1883;
 const char* MQTT_USER = "";
 const char* MQTT_PASSWD = "";
 boolean MqttConfig = false;
- 
+
 const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
+
+IPAddress COAP_SERVER(192, 168, 1, 30);
+int COAP_PORT = 5683;
+boolean Coap_Config = false;
+
+const char* update_api = "update";
 //const char* googleApiKey = "AIzaSyDfWfv8Ueu32tOjWw70PjDb1g3S3AGyo2w";
 //WifiLocation location(googleApiKey);
 
@@ -56,12 +66,16 @@ float gas = 0;
 float gps = 0;
 float rssi = 0;
 
-int protocol = 0; /* {0: http, 1: coap, 2: mqtt */
+int protocol = 1; /* {0: http, 1: coap, 2: mqtt */
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
+
 PubSubClient clientMQTT;
 WiFiClient clientWiFi;
+
+WiFiUDP udp;
+Coap coap(udp);
 
 /* UTILITIES FUNCTIONS, GET AND SET PARAMETERS */
 String getProtocol(){
@@ -173,6 +187,24 @@ void MqttConfiguration(){
     MqttConfig=true;
 }
 
+/* CoAP*/
+
+void callback_response(CoapPacket &packet, IPAddress ip, int port){
+  Serial.println("[COAP] Response got");
+      
+  char p[packet.payloadlen + 1];
+  memcpy(p, packet.payload, packet.payloadlen);
+  p[packet.payloadlen] = NULL;
+      
+  Serial.println(p);
+}
+
+void CoapConfiguration(){
+  Coap_Config = true;
+  coap.response(callback_response);
+  coap.start();  
+}
+
 /* HTTP GET */
 
 String setParametersFromServer(const char* serverName)
@@ -224,6 +256,7 @@ String HTTPGet(const char* serverName){
 }
 
 /* HTTP POST */
+
 
 String getJson()
 {
@@ -329,6 +362,8 @@ void setup() {
   WifiConnection();
   if(protocol == 2)
     MqttConfiguration();
+  else if(protocol == 1)
+    CoapConfiguration();
 }
 
 void loop() {
@@ -343,20 +378,28 @@ void loop() {
 
       if (protocol==0)
       {
-	Serial.println();
-	Serial.println("Using HTTP");
+	      Serial.println();
+	      Serial.println("Using HTTP");
         String page = "";
         page = setParametersFromServer(serverNameGet);
         HTTPost(serverNamePost,getJson());
       }
       else if (protocol==1)
       {
-	Serial.println();
+	      String page = "";
+        page = setParametersFromServer(serverNameGet);
+        
+	      Serial.println();
         Serial.println("Using CoAP");
+        
+        if(!Coap_Config)
+          CoapConfiguration();
+       
+        coap.put(COAP_SERVER, COAP_PORT, update_api, getJson().c_str());
       }      
       else if (protocol==2)
       {
-	Serial.println();
+	      Serial.println();
         Serial.println("Using MQTT");
         if(!MqttConfig)
           MqttConfiguration();
@@ -367,6 +410,8 @@ void loop() {
 
       last_sample = millis();
   }
-  if(protocol == 2)
+  if(protocol == 1)
+    coap.loop();
+  else if(protocol == 2)
     clientMQTT.loop();
 }
