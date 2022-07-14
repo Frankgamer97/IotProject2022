@@ -51,7 +51,7 @@ class CoapServer(resource.Resource):
 
 
 class CoapHandler:
-    def __init__(self, list_values, SERVER_IP="192.168.1.30", SERVER_PORT=5683, UPDATE_API="update"):
+    def __init__(self, list_values, SERVER_IP="192.168.1.31", SERVER_PORT=5683, UPDATE_API="update"):
 
         self.SERVER_IP=SERVER_IP
         self.SERVER_PORT=SERVER_PORT

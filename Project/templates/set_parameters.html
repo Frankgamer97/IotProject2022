@@ -26,6 +26,11 @@
     <form  method="post">
 
       <div class="form-group">
+        <label for="sample_frequency">DEVICE ADDRESS (MAC)</label>
+        <input type="text" class="form-control" name="MAC" placeholder="00:00:00:00:00:00" value="{{ request.form['MAC'] }}"></input>
+      </div>
+
+      <div class="form-group">
         <label for="sample_frequency">FREQUENCY</label>
         <input type="text" class="form-control" name="sample_frequency" placeholder="5000" value="{{ request.form['sample_frequency'] }}"></input>
       </div>

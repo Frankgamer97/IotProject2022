@@ -2,19 +2,14 @@ from flask import Flask, make_response, request, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
 
 from Mqtt import MqttHandler
-from Coap import CoapHandler
 
-from utility import SERVER_MEASUREMENTS
-from utility import get_time, is_int, get_protocol, influxdb_post
-
+from utilities import get_data, is_int, get_protocol, influxdb_post
 import os
 
 
 current_protocol = "HTTP"
 listvalues = []
-post_parameters = {
-             'MAC':"",
-             'sample_frequency': "5000",
+post_parameters = {'sample_frequency': "5000",
              'min_gas_value': "0",
              'max_gas_value': "10000",
              'protocol': "0"}
@@ -22,7 +17,6 @@ post_parameters = {
 
 
 mqtt_handler = MqttHandler(listvalues)
-coap_handler = CoapHandler(listvalues)
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
@@ -64,8 +58,8 @@ def updatesensor():
     global current_protocol
     current_protocol = json_data["C_Protocol"]
     
-    json_data["Time"] = get_time()
-    if len(listvalues) > SERVER_MEASUREMENTS:
+    json_data["Time"] = get_data()
+    if len(listvalues)>7:
         del listvalues[-1]
     listvalues.insert(0, json_data
                       #{'MAC': mac,
@@ -89,11 +83,10 @@ def getsensor():
     #to write a json inizialize the variable with the name of the attribute
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
     return jsonify(
-        post_parameters
-        #sample_frequency=post_parameters["sample_frequency"],
-        #min_gas_value=post_parameters["min_gas_value"],
-        #max_gas_value=post_parameters["max_gas_value"],
-        #protocol=post_parameters["protocol"],
+        sample_frequency=post_parameters["sample_frequency"],
+        min_gas_value=post_parameters["min_gas_value"],
+        max_gas_value=post_parameters["max_gas_value"],
+        protocol=post_parameters["protocol"],
     )
 
 #a little form to update the json post_parameters
@@ -101,25 +94,22 @@ def getsensor():
 def setparams():
     if request.method == 'POST':
         
-        MAC = request.form['MAC']
-        sample_frequency = request.form['sample_frequency']
+
+        sample_frequency= request.form['sample_frequency']
         min_gas_value = request.form['min_gas_value']
         max_gas_value = request.form['max_gas_value']
         protocol = request.form.get('comp_select')
 
         is_ok = True
 
-        if not MAC:
-            MAC = ""
         if not sample_frequency:
             sample_frequency=post_parameters["sample_frequency"]# flash('frequency is required!'.upper(), "alert")
         if not is_int(sample_frequency):
             is_ok = False
             flash('frequency must be a number!'.upper(), "alert")
-        elif not int(sample_frequency) >= 0:
+        if not int(sample_frequency) >= 0:
             is_ok = False
             flash('negative sample frequency!'.upper(), "alert")
-
         if not min_gas_value:
             min_gas_value = post_parameters["min_gas_value"]# flash('min gas value is required!'.upper(), "alert")
         if not is_int(min_gas_value):
@@ -130,12 +120,11 @@ def setparams():
         if not is_int(max_gas_value):
             is_ok = False
             flash('max gas value  must be a number!'.upper(), "alert")
-        if is_int(min_gas_value) and is_int(max_gas_value) and ( not (int(min_gas_value) < int(max_gas_value))):
+        if not (int(min_gas_value) < int(max_gas_value)):
             is_ok = False
             flash('gas value range is incorrect!'.upper(), "alert")
         
         if is_ok:
-            post_parameters['MAC']= MAC
             post_parameters['sample_frequency']= sample_frequency
             post_parameters['min_gas_value']= min_gas_value
             post_parameters['max_gas_value']= max_gas_value
@@ -163,7 +152,6 @@ if __name__ == '__main__':
 
     app.run(host='0.0.0.0',port=5000)
     mqtt_handler.mqtt_thread.join(0)
-    coap_handler.coap_thread.join(0)
     #  from livereload import Server
     #  server = Server(app.wsgi_app)
     #  server.serve(host = '0.0.0.0',port=5000)
