@@ -16,7 +16,7 @@ coap_handler = None
 listvalues = []
 
 
-
+ip = "192.168.1.12"
 
 
 post_parameters = {
@@ -49,12 +49,13 @@ def get_time():
     return datetime.now(tz)
     
 def get_IP():
-    hostname=socket.gethostname()   
-    IPAddr=socket.gethostbyname(hostname)   
-    print("Your Computer Name is:"+hostname)   
-    print("Your Computer IP Address is:"+IPAddr)
-    return IPAddr
-    
+    #hostname=socket.gethostname()   
+    #IPAddr=socket.gethostbyname(hostname)   
+    #print("Your Computer Name is:"+hostname)   
+    #print("Your Computer IP Address is:"+IPAddr)
+    #return IPAddr
+    return ip
+
 def is_int(data):
     try:
         isinstance(int(data), int)

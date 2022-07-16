@@ -234,20 +234,23 @@ def aggregate():
 #flask run --host=0.0.0.0
 
 if __name__ == '__main__':
-    get_IP()
-
+    ip=get_IP()
 
     mqtt_handler = MqttHandler(listvalues)
-    coap_handler = CoapHandler(listvalues, SERVER_IP="192.168.1.12")
+    coap_handler = CoapHandler(listvalues, SERVER_IP=ip)
 
-    app.run(host='0.0.0.0',port=5000)
+
+    app.run(host=ip,port=5000)
+
+
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
 
 
 
 
-
+    #ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
+    #print("------>",ip)
 
     #  from livereload import Server
     #  server = Server(app.wsgi_app)
