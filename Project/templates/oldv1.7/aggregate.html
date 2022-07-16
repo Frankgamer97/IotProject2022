@@ -26,11 +26,11 @@
 
 
 {% if messages.values()|length >0 %}
-<div style="overflow-x: auto;">
-  <table class="table table-hover table-bordered table-responsive{-sm|-md|-lg|-xl} ">
-    <thead class="thead-dark">
-      <tr>
-      <td/>
+
+<table class="table table-hover table-bordered ">
+  <thead class="thead-dark">
+    <tr>
+    <td/>
 
 
 {% with key = messages.values()|first %}
@@ -53,9 +53,8 @@
   {% endfor %}
 </tr>
 {% endfor %}
-     <hr>
-  </table>
-</div>
+
+</table>
 {% endif %}
 
 <!--

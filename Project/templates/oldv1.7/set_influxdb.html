@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+
+    h1 {
+    text-align:center;
+    }
+
+{% endblock %}
+
+
+{% block title %}   SET INFLUXDB PARAMETERS  {% endblock %}
+
+{% block inner %}
+
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true)%}
+        {% for C,M in messages %}
+            <div class="{{ C }}">{{ M }}</div>
+        {% endfor %}
+        {% endwith%}
+        
+
+    </div>
+  
+    <form  method="post">
+
+      <div class="form-group">
+        <label for="sample_frequency">USER</label>
+        <input type="text" class="form-control" name="user" placeholder="name@mail.com" value="{{ request.form['user'] }}"></input>
+      </div>
+
+      <div class="form-group">
+        <label for="sample_frequency">TOKEN</label>
+        <input type="text" class="form-control" name="token" value="{{ request.form['token'] }}"></input>
+      </div>
+
+
+      <div class="form-group">
+        <label for="min_gas_value">BUCKET</label>
+        <input type="text" class="form-control" name="bucket" placeholder="esp32" value="{{ request.form['bucket'] }}"></input>
+      </div>
+
+      <div class="form-group">
+      <label for="max_gas_value">SERVER</label>
+      <input type="text" class="form-control" name="server" placeholder="https://europe-west1-1.gcp.cloud2.influxdata.com" value="{{ request.form['server'] }}"></input>
+      </div>
+
+      <div class="form-group">
+      <label for="max_gas_value">MEASUREMENT</label>
+      <input type="text" class="form-control" name="measurement" placeholder="e.g. my IP" value="{{ request.form['measurement'] }}"></input>
+      </div>
+
+
+      <button type="submit" class="btn btn-primary">Update Parameters</button>
+    </form>
+
+   
+{% endblock %}

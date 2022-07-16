@@ -6,7 +6,7 @@ import pytz
 import os
 import socket  
 
-SERVER_MEASUREMENTS = 19
+SERVER_MEASUREMENTS = 8
 
 current_protocol = "HTTP"
 
