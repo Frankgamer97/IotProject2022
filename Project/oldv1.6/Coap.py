@@ -6,8 +6,7 @@ import aiocoap
 import ast
 from threading import Thread
 from utility import SERVER_MEASUREMENTS
-from utility import get_time
-from influxdb import influxdb_post
+from utility import get_time, influxdb_post
 
 class CoapServer(resource.Resource):
 
@@ -52,7 +51,7 @@ class CoapServer(resource.Resource):
 
 
 class CoapHandler:
-    def __init__(self, list_values, SERVER_IP="192.168.1.12", SERVER_PORT=5683, UPDATE_API="update"):
+    def __init__(self, list_values, SERVER_IP="192.168.1.31", SERVER_PORT=5683, UPDATE_API="update"):
 
         self.SERVER_IP=SERVER_IP
         self.SERVER_PORT=SERVER_PORT

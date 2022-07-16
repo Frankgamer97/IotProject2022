@@ -4,8 +4,41 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 import pytz
 import os
+import socket  
 
-SERVER_MEASUREMENTS = 7
+SERVER_MEASUREMENTS = 8
+
+current_protocol = "HTTP"
+
+mqtt_handler = None
+coap_handler = None
+
+listvalues = []
+
+
+
+
+
+post_parameters = {
+             'MAC':"",
+             'sample_frequency': "5000",
+             'min_gas_value': "0",
+             'max_gas_value': "10000",
+             'protocol': "0"
+             }
+
+influx_parameters = {
+             'user':"primiarmi.pac@gmail.com",
+             'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
+             'bucket': "esp32",
+             'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
+             'measurement': "mamma"
+             }
+
+
+
+def set_tunable_window(n):
+    SERVER_MEASUREMENTS = n
 
 def get_time():
 
@@ -15,6 +48,12 @@ def get_time():
     tz = pytz.timezone('Europe/Rome')
     return datetime.now(tz)
     
+def get_IP():
+    hostname=socket.gethostname()   
+    IPAddr=socket.gethostbyname(hostname)   
+    print("Your Computer Name is:"+hostname)   
+    print("Your Computer IP Address is:"+IPAddr)
+    return IPAddr
     
 def is_int(data):
     try:
@@ -30,43 +69,4 @@ def get_protocol(prot):
         return 1
     elif prot=="MQTT":
         return 2
-
-def influxdb_post(json_data):
-    
-    token = "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag=="
-    org = "primiarmi.pac@gmail.com"
-    bucket = "esp32"
-
-    client = InfluxDBClient(url="https://europe-west1-1.gcp.cloud2.influxdata.com", token=token, org=org)
-
-    write_api = client.write_api(write_options=SYNCHRONOUS)
-
-
-    mac = json_data["MAC"]
-    GPS= json_data["GPS"]
-    rssi = json_data["RSSI"]
-    Temperature = json_data["Temperature"]
-    Humidity = json_data["Humidity"]
-    Gas = json_data["Gas"]
-    AQI = json_data["AQI"]
-    Time = json_data["Time"]
-    
-
-    print(json_data)
-    
-    point = Point("mamma") \
-        .tag("Device", mac) \
-        .tag("GPS", GPS) \
-        .field("RSSI", rssi) \
-        .field("Temperature", Temperature) \
-        .field("Humidity", Humidity) \
-        .field("Gas", Gas) \
-        .field("AQI", AQI) \
-        .time(Time, WritePrecision.NS)
-
-
-    #point = Point("my_measurement").tag("location", "Prague").field("temperature", 25.3)
-    write_api.write(bucket, org, point)
- 
-    return "ok"
 

@@ -5,15 +5,23 @@
   h1 {
   text-align:center;
   }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
 
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 2px solid #ddd;
+  }
 {% endblock %}
 
-
-{% block title %}   ESP32  {% endblock %}
+{% block title %}   AGGREGATION  {% endblock %}
 
 {% block inner %}
 
-  <div id="place_for_suggestions"></div>
+  <div id="place_for_table"></div>
 
 {% endblock %}
 
@@ -26,22 +34,20 @@
     function()
     {
       $.ajax({
-        url: "/tables",
+        url: "/aggregate",
         type: "get",
         data: {},
         success: function(response) {
-          $("#place_for_suggestions").html(response);
+          $("#place_for_table").html(response);
         },
         error: function(xhr) {
           //Do Something to handle error
         }
       });
     },
-    1500);    
+    1000);    
 
   </script>
   
 {% endblock %}
-
-
 

@@ -3,8 +3,7 @@ from paho.mqtt import publish, subscribe
 import ast
 
 from utility import SERVER_MEASUREMENTS
-from utility import get_time
-from influxdb import influxdb_post
+from utility import get_time, influxdb_post
 
 
 class MqttHandler:

@@ -4,17 +4,25 @@ from flask_bootstrap import Bootstrap
 from Mqtt import MqttHandler
 from Coap import CoapHandler
 
-from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP
-from influxdb import influxdb_post
-from aggregation import Aggregation
+from utility import SERVER_MEASUREMENTS
+from utility import get_time, is_int, get_protocol, influxdb_post
 
 import os
-aggr = Aggregation()
+
+
+current_protocol = "HTTP"
+listvalues = []
+post_parameters = {
+             'MAC':"",
+             'sample_frequency': "5000",
+             'min_gas_value': "0",
+             'max_gas_value': "10000",
+             'protocol': "0"}
 
 
 
-
+mqtt_handler = MqttHandler(listvalues)
+coap_handler = CoapHandler(listvalues)
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
@@ -30,9 +38,6 @@ Bootstrap(app)
 def not_found():
     abort(404)
 
-
-
-
 #Main page with results
 @app.route('/')
 def index():
@@ -41,14 +46,8 @@ def index():
 #GET TABLES AT RUNTIME
 @app.route('/tables')
 def tables():
+
     return render_template('tables.html', messages=listvalues)
-
-
-
-
-
-
-
 
 # esp32 post its value to the list listvalues
 @app.route('/update-sensor/', methods=['GET', 'POST'])
@@ -66,7 +65,7 @@ def updatesensor():
     current_protocol = json_data["C_Protocol"]
     
     json_data["Time"] = get_time()
-    if len(listvalues) >= SERVER_MEASUREMENTS:
+    if len(listvalues) > SERVER_MEASUREMENTS:
         del listvalues[-1]
     listvalues.insert(0, json_data
                       #{'MAC': mac,
@@ -84,8 +83,6 @@ def updatesensor():
     
     return "ok"
 
-
-
 #esp32 take values from the json post_parameters
 @app.route("/get-sensor/", methods=('GET', 'POST'))
 def getsensor():
@@ -98,7 +95,6 @@ def getsensor():
         #max_gas_value=post_parameters["max_gas_value"],
         #protocol=post_parameters["protocol"],
     )
-
 
 #a little form to update the json post_parameters
 @app.route('/set-parameters/', methods=('GET', 'POST'))
@@ -155,100 +151,19 @@ def setparams():
                 pass
                 
             flash('Parameters updated'.upper(), "success")
-            # return redirect(url_for('index'))
+
 
     protocols=[{'name':'HTTP'}, {'name':'COAP'}, {'name':'MQTT'}]
     return render_template('set_parameters.html',prot=protocols)
 
 
-# check influx params
-@app.route("/get-influxdb/", methods=('GET', 'POST'))
-def getinfluxdb():
-    #to write a json inizialize the variable with the name of the attribute
-    #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
-    return jsonify(influx_parameters)
-
-
-
-#a form to update the influx parameters
-@app.route('/set-influxdb/', methods=('GET', 'POST'))
-def setinfluxdb():
-    if request.method == 'POST':
-        
-
-        user = request.form['user']
-        token = request.form['token']
-        bucket = request.form['bucket']
-        server = request.form['server']
-        measurement = request.form['measurement']
-
-        is_ok = True
-
-        if not user:
-            user=influx_parameters["user"]
-        if not token:
-            token=influx_parameters["token"]
-        if not bucket:
-            bucket=influx_parameters["bucket"]
-        if not server:
-            server=influx_parameters["server"]
-        if not measurement:
-            measurement=influx_parameters["measurement"]
-
-
-        if is_ok:
-            influx_parameters['user']= user
-            influx_parameters['token']= token
-            influx_parameters['bucket']= bucket
-            influx_parameters['server']= server
-            influx_parameters['measurement']= measurement
-
-            
-                  
-            flash('Parameters updated'.upper(), "success")
-            # return redirect(url_for('index'))
-
-    return render_template('set_influxdb.html')
-
-
-
-
-
-@app.route('/aggregation/')
-def aggregation():
-    return render_template('aggregation.html')
-
-
-
-
-#GET TABLES AT RUNTIME
-@app.route('/aggregate')
-def aggregate():
-    #print(aggr.build_aggregate())
-    return render_template('aggregate.html', messages=aggr.build_aggregate())
-
-
-
-
-
 #flask run --host=0.0.0.0
 
 if __name__ == '__main__':
-    get_IP()
-
-
-    mqtt_handler = MqttHandler(listvalues)
-    coap_handler = CoapHandler(listvalues, SERVER_IP="192.168.1.12")
 
     app.run(host='0.0.0.0',port=5000)
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
-
-
-
-
-
-
     #  from livereload import Server
     #  server = Server(app.wsgi_app)
     #  server.serve(host = '0.0.0.0',port=5000)
