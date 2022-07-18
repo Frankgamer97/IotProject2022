@@ -28,7 +28,7 @@ class Meteo:
 
 	def set_time(self,start,end):
 		self.start=datetime(start[0],start[1],start[2])
-		self.end=datetime(end[0],end[1],end[2])
+		self.end=datetime(end[0],end[1],end[2],end[3],end[4])
 
 	def set_location(self,height=70):
 		self.get_coord()
@@ -61,7 +61,7 @@ class Meteo:
 	def post_data(self,measurement="test1-meteostat"):
 		lista=self.get_data()
 		for el in lista:
-			influxdb_post(el, type_data="meteostat", measurement)
+			influxdb_post(el, type_data="meteostat", measurement=measurement)
 
 	def post_meteo(self, start, end,measurement="test1-meteostat"):
 		self.get_interval_meteo(start,end)
@@ -74,6 +74,6 @@ if __name__ == '__main__':
 	# lista=meteor.get_data()
 	#meteor.post_data(measurement="test1-meteostat")
 	
-	Meteo().post_meteo(self, (2022, 7, 1), (2022, 7, 16),measurement="test2-meteostat"):
+	Meteo().post_meteo( (2022, 7, 1), (2022, 7, 31, 23, 59),measurement="test7-meteostat")
 
 
