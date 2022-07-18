@@ -1,0 +1,72 @@
+{% extends "bootstrap/base.html" %}
+{% block html_attribs %} lang="en"{% endblock %}
+{% block styles %}
+    <style>
+        {% block styles1 %}
+
+        {% endblock %}
+        .message {
+            padding: 10px;
+            margin: 5px;
+            background-color: #f3f3f3
+        }
+        nav a {
+            color: #d64161;
+            font-size: 3em;
+            margin-left: 50px;
+            text-decoration: none;
+        }
+
+        .alert {
+            padding: 20px;
+            margin: 5px;
+            color: #970020;
+            background-color: #ffd5de;
+        }
+        
+        .success {
+            padding: 20px;
+            margin: 5px;
+            color: #970020;
+            background-color: #02f23e;
+        }
+    </style>
+{{super()}}
+
+{% endblock %}
+
+{% block content %}
+    <head>
+        <meta charset="UTF-8">
+
+    </head>
+    <body>
+        <nav>
+            <a href="{{ url_for('index') }}">IOT PROJECT</a>
+            <a href="{{ url_for('aggregation') }}">AGGREGATION</a>
+            <a href="{{ url_for('setinfluxdb') }}">SET INFLUXDB</a>
+            <a href="{{ url_for('setparams') }}">SET ESP32</a>
+            <a href="{{ url_for('getinfluxdb') }}">InfluxDBJson</a>
+            <a href="{{ url_for('getsensor') }}">ParamJson</a>
+        </nav>
+        <hr>
+
+           <h1>{% block title %}  Base {% endblock %}</h1>
+
+    {% block inner %} {% endblock %}
+    {% endblock %}
+    </body>
+    {% block scripts %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+
+{% block scripts1 %}
+
+{% endblock %}
+
+
+{% endblock %}
+
+

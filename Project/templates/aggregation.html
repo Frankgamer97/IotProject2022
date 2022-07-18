@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+
+{% endblock %}
+
+{% block title %}   AGGREGATION  {% endblock %}
+
+{% block inner %}
+
+    <div id="place_for_table"></div>
+
+{% endblock %}
+
+
+{% block scripts1 %}
+
+    <script>
+
+    setInterval(                               //Periodically 
+      function()
+      {
+        $.ajax({
+          url: "/aggregate",
+          type: "get",
+          data: {},
+          success: function(response) {
+            $("#place_for_table").html(response);
+          },
+          error: function(xhr) {
+            //Do Something to handle error
+          }
+        });
+      },
+      1000);    
+
+    </script>
+  
+{% endblock %}
+

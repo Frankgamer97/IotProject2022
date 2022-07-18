@@ -2,17 +2,16 @@ from flask import Flask, make_response, request, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
 
 from Mqtt import MqttHandler
-from CoAP import CoapHandler
+from Coap import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
 from utility import get_time, is_int, get_protocol, get_IP
 from influxdb import influxdb_post
 from aggregation import Aggregation
-from TelegramBotHandler import TelegramBotHandler
 
 import os
-
 aggr = Aggregation()
+
 
 
 
@@ -228,22 +227,25 @@ def aggregate():
     #print(aggr.build_aggregate())
     return render_template('aggregate.html', messages=aggr.build_aggregate())
 
+
+
+
+
 #flask run --host=0.0.0.0
+
 if __name__ == '__main__':
-    
     ip=get_IP()
 
     mqtt_handler = MqttHandler(listvalues)
     coap_handler = CoapHandler(listvalues, SERVER_IP=ip)
-    bot_handler = TelegramBotHandler(aggr)
-    
+
 
     app.run(host=ip,port=5000)
 
 
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
-    bot_handler.join(0)
+
 
 
 

@@ -2,13 +2,17 @@
 
 {% block styles1 %}
 
+    h1 {
+    text-align:center;
+    }
+
 {% endblock %}
 
 
 {% block title %}   SET ESP32 PARAMETERS  {% endblock %}
 
 {% block inner %}
-    <hr>
+
     <div class="content">
         {% with messages = get_flashed_messages(with_categories=true)%}
         {% for C,M in messages %}

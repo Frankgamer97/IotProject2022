@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+
+  h1 {
+  text-align:center;
+  }
+
+{% endblock %}
+
+
+{% block title %}   ESP32  {% endblock %}
+
+{% block inner %}
+
+  <div id="place_for_suggestions"></div>
+
+{% endblock %}
+
+
+{% block scripts1 %}
+
+  <script>
+
+  setInterval(                               //Periodically 
+    function()
+    {
+      $.ajax({
+        url: "/tables",
+        type: "get",
+        data: {},
+        success: function(response) {
+          $("#place_for_suggestions").html(response);
+        },
+        error: function(xhr) {
+          //Do Something to handle error
+        }
+      });
+    },
+    1500);    
+
+  </script>
+
+{% endblock %}
+
+
+

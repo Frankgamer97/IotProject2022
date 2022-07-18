@@ -1,0 +1,31 @@
+
+{% for message in messages %}
+
+  <table class="table" id="myTable">
+    <thead>
+      <tr>
+        <th scope="col">Device</th>
+        <th scope="col">latitude</th>
+        <th scope="col">longitude</th>
+        <th scope="col">WIFI RSSI</th>
+        <th scope="col">Temperature</th>
+        <th scope="col">Humidity</th>
+        <th scope="col">Gas Detection</th>
+        <th scope="col">AQI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ message['MAC'] }}</td>
+        <td> {{ message['GPS'][0] }}</td>
+        <td> {{ message['GPS'][1] }}</td>
+        <td> {{ message['RSSI'] }}</td>
+        <td> {{ message['Temperature'] }}</td>
+        <td>{{ message['Humidity'] }}</td>
+        <td>{{ message['Gas'] }}</td>
+        <td>{{ message['AQI'] }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+{% endfor %}

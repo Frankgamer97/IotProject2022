@@ -2,13 +2,17 @@
 
 {% block styles1 %}
 
+    h1 {
+    text-align:center;
+    }
+
 {% endblock %}
 
 
-{% block title %}   SET ESP32 PARAMETERS  {% endblock %}
+{% block title %}   Set Parameters  {% endblock %}
 
 {% block inner %}
-    <hr>
+
     <div class="content">
         {% with messages = get_flashed_messages(with_categories=true)%}
         {% for C,M in messages %}
@@ -20,11 +24,6 @@
     </div>
   
     <form  method="post">
-
-      <div class="form-group">
-        <label for="sample_frequency">DEVICE ADDRESS (MAC)</label>
-        <input type="text" class="form-control" name="MAC" placeholder="00:00:00:00:00:00" value="{{ request.form['MAC'] }}"></input>
-      </div>
 
       <div class="form-group">
         <label for="sample_frequency">FREQUENCY</label>
