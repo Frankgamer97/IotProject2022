@@ -1,5 +1,6 @@
 
-from time import sleep as sec_sleep
+# from time import sleep as sec_sleep
+from datetime import datetime
 from utility import telegram_api_key, telegram_chat_id
 from threading import Thread
 from telegram import Bot as TelegramBot
@@ -22,20 +23,28 @@ class TelegramBotHandler(Thread):
 
     def run(self):
         
+        start = datetime.now()
         while True:
-            data = self.aggregation_handler.build_aggregate()
-            columns = list(data.keys())
 
-            if len(columns) > 0:
+            current = datetime.now()
 
-                indexes = data["max"].keys()
-                self.df = DataFrame(index=indexes,columns=columns)
+            if (current - start).seconds >= self.intervall:
 
-                for column in columns:
-                    data_column = list(data[column].values())
-                    self.df[column] = data_column
+                start = current
 
-                image_export(self.df,self.dir+"/table.png")
-                self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb'))
-            
-                sec_sleep(self.intervall)
+                data = self.aggregation_handler.build_aggregate()
+                columns = list(data.keys())
+
+                if len(columns) > 0:
+
+                    indexes = data["max"].keys()
+                    self.df = DataFrame(index=indexes,columns=columns)
+
+                    for column in columns:
+                        data_column = list(data[column].values())
+                        self.df[column] = data_column
+
+                    image_export(self.df,self.dir+"/table.png")
+                    self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb'))
+                
+                # sec_sleep(self.intervall)
