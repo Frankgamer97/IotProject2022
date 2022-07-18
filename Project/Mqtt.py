@@ -11,7 +11,7 @@ class MqttHandler:
     list_values = None
     influxdb_post = None
 
-    def __init__(self, list_values, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
+    def __init__(self, list_values,telegramHandler, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
         self.server_name = server_name
         self.user = user
         self.password = password
@@ -21,7 +21,7 @@ class MqttHandler:
             'password': self.password
             }
 
-
+        MqttHandler.telegramHandler=telegramHandler
         self.topics = topics
 
         self.qos=qos # for publish & subscribe
@@ -52,6 +52,8 @@ class MqttHandler:
             
             MqttHandler.list_values.insert(0,json_data) 
             # influxdb_post(json_data)
+            MqttHandler.telegramHandler.telegram_updates()
+
         except Exception as e:
             print("[MQTT] DATA ERROR")
             print()

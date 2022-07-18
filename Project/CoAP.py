@@ -5,15 +5,16 @@ import aiocoap.resource as resource
 import aiocoap
 import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS
+from utility import SERVER_MEASUREMENTS, ip
 from utility import get_time
 from influxdb import influxdb_post
 
 class CoapServer(resource.Resource):
 
-    def __init__(self, list_values):
+    def __init__(self, list_values,telegramHandler):
         super(CoapServer, self).__init__()
         self.list_values = list_values
+        self.telegramHandler = telegramHandler
 
     # async def render_get(self, request):
     #     print("[COAP] GET REQUEST RECEIVED: ")
@@ -39,7 +40,9 @@ class CoapServer(resource.Resource):
                 del self.list_values[-1]
 
             self.list_values.insert(0, json_data)
-        
+
+            self.telegramHandler.telegram_updates()
+  
             # influxdb_post(json_data)
         except Exception as e:
             print("[COAP] PUT REQUEST ERROR")
@@ -52,8 +55,8 @@ class CoapServer(resource.Resource):
 
 
 class CoapHandler:
-    def __init__(self, list_values, SERVER_IP="192.168.1.12", SERVER_PORT=5683, UPDATE_API="update"):
-
+    def __init__(self, list_values,telegramHandler, SERVER_IP=ip, SERVER_PORT=5683, UPDATE_API="update"):
+        self.telegramHandler = telegramHandler
         self.SERVER_IP=SERVER_IP
         self.SERVER_PORT=SERVER_PORT
         self.UPDATE_API = UPDATE_API
@@ -68,7 +71,7 @@ class CoapHandler:
     @staticmethod
     def start_coap(self, event_loop):
         root = resource.Site()
-        root.add_resource([self.UPDATE_API], CoapServer(self.list_values))
+        root.add_resource([self.UPDATE_API], CoapServer(self.list_values, self.telegramHandler))
         
         context = aiocoap.Context.create_server_context(site=root, bind=(self.SERVER_IP, self.SERVER_PORT))
         asyncio.Task(context)

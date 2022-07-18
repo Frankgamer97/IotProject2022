@@ -1,0 +1,14 @@
+numpy
+pandas
+matplotlib
+python-telegram-bot
+dataframe-image
+aiocoap
+paho-mqtt
+Flask
+Flask-bootstrap
+influxdb-client
+jinja2
+meteostat
+requests
+

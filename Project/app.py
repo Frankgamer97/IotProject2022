@@ -13,7 +13,7 @@ from TelegramBotHandler import TelegramBotHandler
 import os
 
 aggr = Aggregation()
-
+bot_handler = TelegramBotHandler(aggr)
 
 
 
@@ -81,7 +81,7 @@ def updatesensor():
                       #  }
                        )
     # influxdb_post(json_data) # IMPORTANTE!!!!
-
+    bot_handler.telegram_updates()
     
     return "ok"
 
@@ -230,12 +230,12 @@ def aggregate():
 
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
-    
+
     ip=get_IP()
 
-    mqtt_handler = MqttHandler(listvalues)
-    coap_handler = CoapHandler(listvalues, SERVER_IP=ip)
-    bot_handler = TelegramBotHandler(aggr)
+    mqtt_handler = MqttHandler(listvalues, bot_handler)
+    coap_handler = CoapHandler(listvalues, bot_handler)
+   # bot_handler = TelegramBotHandler(aggr)
     
 
     app.run(host=ip,port=5000)
@@ -243,9 +243,8 @@ if __name__ == '__main__':
 
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
-    bot_handler.join(0)
-
-
+  #  bot_handler.telegram_thread.join(0)
+    #bot_handler.join(0)
 
     #ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
     #print("------>",ip)

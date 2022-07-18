@@ -4,7 +4,7 @@ import pytz
 import os
 import socket  
 
-SERVER_MEASUREMENTS = 19
+SERVER_MEASUREMENTS = 18
 
 current_protocol = "HTTP"
 
@@ -36,6 +36,11 @@ influx_parameters = {
 
 telegram_api_key = "5509057193:AAHxI7t17bDev0WfgA_V_jC9I_ZcgjGxRvw" 
 telegram_chat_id = "-1001781808448"
+
+
+
+
+
 
 def set_tunable_window(n):
     SERVER_MEASUREMENTS = n
