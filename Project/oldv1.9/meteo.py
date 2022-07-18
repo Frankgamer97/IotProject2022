@@ -58,22 +58,17 @@ class Meteo:
 		return new_data_list
 
 
-	def post_data(self,measurement="test1-meteostat"):
+	def post_data(self):
 		lista=self.get_data()
 		for el in lista:
-			influxdb_post(el, type_data="meteostat", measurement)
+			influxdb_post(el, type_data="meteostat", measurement="test1-meteostat")
 
-	def post_meteo(self, start, end,measurement="test1-meteostat"):
-		self.get_interval_meteo(start,end)
-		self.post_data(measurement)
-	
 
 if __name__ == '__main__':
-	#meteor = Meteo()
-	#meteor.get_interval_meteo((2022, 7, 1),(2022, 7, 16))
-	# lista=meteor.get_data()
-	#meteor.post_data(measurement="test1-meteostat")
+	meteor = Meteo()
+	meteor.get_interval_meteo((2022, 7, 1),(2022, 7, 16))
+	lista=meteor.get_data()
+	meteor.post_data()
 	
-	Meteo().post_meteo(self, (2022, 7, 1), (2022, 7, 16),measurement="test2-meteostat"):
 
 
