@@ -14,7 +14,7 @@ coap_handler = None
 listvalues = []
 
 
-ip = "192.168.1.12"
+ip = "192.168.1.254"
 
 
 post_parameters = {
@@ -34,6 +34,8 @@ influx_parameters = {
              }
 
 
+telegram_api_key = "5509057193:AAHxI7t17bDev0WfgA_V_jC9I_ZcgjGxRvw" 
+telegram_chat_id = "-1001781808448"
 
 def set_tunable_window(n):
     SERVER_MEASUREMENTS = n
