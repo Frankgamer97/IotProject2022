@@ -13,7 +13,11 @@
 #include <ArduinoJson.h> //v5.13.5
 #include <MeanFilterLib.h> //https://github.com/luisllamasbinaburo/Arduino-Meanfilter
 //#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
+#include "Time.h"
 
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;
 
 /* PARAMETERS */
 #define SERIAL_BAUD_RATE 115200
@@ -26,8 +30,8 @@
 
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "TIM-Salentu";//"TIM-03859326";
-const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"f5R235Dhc5bdYbCUtGfKH6zP";
+const char ssid[] = "TIM-Salentu";//"RouterPi";//"TIM-03859326";
+const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
 /* MQTT broker configuration*/
 const char* MQTT_SERVER="broker.emqx.io";
@@ -40,7 +44,7 @@ const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
 
-IPAddress COAP_SERVER(192, 168, 1, 30);
+IPAddress COAP_SERVER(192, 168, 1, 21);
 int COAP_PORT = 5683;
 boolean Coap_Config = false;
 
@@ -49,8 +53,8 @@ const char* update_api = "update";
 //WifiLocation location(googleApiKey);
 
 //Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.1.30:5000/update-sensor/";
-const char* serverNameGet = "http://192.168.1.30:5000/get-sensor/";
+const char* serverNamePost = "http://192.168.1.21:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.1.21:5000/get-sensor/";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
@@ -66,7 +70,7 @@ float gas = 0;
 float gps = 0;
 float rssi = 0;
 
-int protocol = 1; /* {0: http, 1: coap, 2: mqtt */
+int protocol = 0; /* {0: http, 1: coap, 2: mqtt */
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
@@ -78,6 +82,79 @@ WiFiUDP udp;
 Coap coap(udp);
 
 /* UTILITIES FUNCTIONS, GET AND SET PARAMETERS */
+
+String getMonth(String month){
+ if(month == "January")
+  return "1";
+ else if(month == "February")
+  return "2";
+ else if(month == "March")
+  return "3";
+ else if(month == "April")
+  return "4";
+ else if(month == "May")
+  return "5";
+ else if(month == "June")
+  return "6";
+ else if(month == "July")
+  return "7";
+ else if(month == "August")
+  return "8";
+ else if(month == "September")
+  return "9";
+ else if(month == "October")
+  return "10";
+ else if(month == "November")
+  return "11";
+ else if(month == "December")
+  return "12";
+  
+ return "-1";
+}
+
+String getTime(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo))
+    Serial.println("Failed to obtain time");
+  else{
+    String now = "";
+    char ts_year[5];
+    char ts_month[10];
+    char ts_rest[12];
+
+    char ts_total [28];
+    strftime(ts_year,sizeof(ts_year),"%Y", &timeinfo);
+    //String year(ts_year);
+
+    strftime(ts_month,sizeof(ts_month),"%B", &timeinfo);
+    //String month(ts_month);
+
+    strftime(ts_rest,sizeof(ts_rest),"%d %H %M %S", &timeinfo);
+    //String rest(ts_rest);
+
+    /*
+    strcat(ts_total,ts_year);
+    strcat(ts_total, " ");
+    strcat(ts_total, ts_month);
+    strcat(ts_total, " ");
+    strcat(ts_total, ts_rest);
+    return ts_total;
+    */
+
+    String year(ts_year);
+    String month(ts_month);
+    String rest(ts_rest);
+
+    return year+" "+getMonth(month)+" "+rest;
+    //now += year;
+    //now += " "+getMonth(month)+" ";
+    //now += rest;
+
+    
+  }
+  return "";
+}
+
 String getProtocol(){
   if(protocol == 0)
     return "HTTP";
@@ -273,6 +350,7 @@ String getJson()
         root["AQI"] = getAQI();
         root["MAC"] = WiFi.macAddress();
         root["C_Protocol"] = getProtocol();
+        root["Time"] = getTime();
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
@@ -352,7 +430,6 @@ void HTTPost(const char* serverName, String json_output){
         
 */
 
-
 /* ESP32 WORK-FLOW */
 
 void setup() {
@@ -364,6 +441,8 @@ void setup() {
     MqttConfiguration();
   else if(protocol == 1)
     CoapConfiguration();
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 }
 
 void loop() {
@@ -373,8 +452,6 @@ void loop() {
     Serial.println("======================");
     Serial.print("Timer set to ");
     Serial.println(sample_frequency);
-
-      
 
       if (protocol==0)
       {
@@ -407,7 +484,7 @@ void loop() {
         Serial.print("Data published: ");
         Serial.println(published_data);
       }
-
+      
       last_sample = millis();
   }
   if(protocol == 1)

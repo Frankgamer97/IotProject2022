@@ -25,14 +25,13 @@ class Aggregation:
 
 	def update_pandas(self):
 		self.df = pd.DataFrame(listvalues)
+		self.df_total = self.df.copy()
 		self.df = self.df.drop(columns=["MAC","Time","C_Protocol","GPS","AQI"], axis=1, errors='ignore')
 		self.df = self.df.apply(pd.to_numeric, errors='coerce')
 
 
 	def get_pandas(self):
 		return self.pandas
-
-
 
 	def get_max(self):
 		self.max = self.df.max()
@@ -60,6 +59,15 @@ class Aggregation:
 		self.cov = self.df.cov()
 		return self.cov.to_dict()
 
+	def get_packet_delivery_ratio(self,protocol):
+		try:
+			packets = 1 + self.df_total[self.df_total["C_Protocol"] == protocol]["C_Protocol"].count()
+			total = 1 + self.df_total["C_Protocol"].count()
+
+			return packets / total
+
+		except:
+			return 1.0
 
 	def build_aggregate(self):
 		self.update_pandas()

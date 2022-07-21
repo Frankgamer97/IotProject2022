@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import ntplib
 
 import pytz
 import os
@@ -13,9 +14,7 @@ coap_handler = None
 
 listvalues = []
 
-
-ip = "192.168.1.254"
-
+ip = "192.168.1.21"
 
 post_parameters = {
              'MAC':"",
@@ -36,6 +35,12 @@ influx_parameters = {
 
 telegram_api_key = "5509057193:AAHxI7t17bDev0WfgA_V_jC9I_ZcgjGxRvw" 
 telegram_chat_id = "-1001781808448"
+telegram_bot_update_frequency = 5
+
+# stat_data_frequency = 5
+# stat_data_delay = 10
+stat_data_timeout = 10
+stat_data_intervall = 20
 
 def set_tunable_window(n):
     SERVER_MEASUREMENTS = n
@@ -47,6 +52,23 @@ def get_time():
 
     tz = pytz.timezone('Europe/Rome')
     return datetime.now(tz)
+
+def get_ntp_time():
+    ntp_client = ntplib.NTPClient()
+    response = ntp_client.request('uk.pool.ntp.org', version=3)
+    return datetime.fromtimestamp(response.tx_time)
+    
+def get_device_time(dev_time):
+    # "2022 7 22 00 06 16"
+    time_array = dev_time.split(" ")
+    year = int(time_array[0])
+    month = int(time_array[1])
+    day = int(time_array[2])
+    hour = int(time_array[3])
+    minute = int(time_array[4])
+    second = int(time_array[5])
+
+    return datetime(year, month, day, hour, minute, second)
     
 def get_IP():
     #hostname=socket.gethostname()   
@@ -70,4 +92,3 @@ def get_protocol(prot):
         return 1
     elif prot=="MQTT":
         return 2
-

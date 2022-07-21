@@ -1,3 +1,4 @@
+from struct import pack
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
 
@@ -5,16 +6,19 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time
 from influxdb import influxdb_post
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
 
+from datetime import datetime
+# from DeviceStatHandler import DeviceStatHandler
+
 import os
 
 aggr = Aggregation()
-
-
+bot_handler = TelegramBotHandler(aggr)
+http_startMeasurements = None
 
 
 #app = Flask(__name__, template_folder='templates')
@@ -22,7 +26,6 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.secret_key = os.getenv('SECRET_KEY', 'secret string')
 Bootstrap(app)
-
 
 
 
@@ -54,7 +57,7 @@ def tables():
 # esp32 post its value to the list listvalues
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
-    json_data = request.json
+    
     #mac = json_data["MAC"]
     #GPS= json_data["GPS"]
     #rssi = json_data["RSSI"]
@@ -63,12 +66,23 @@ def updatesensor():
     #Gas = json_data["Gas"]
     #AQI = json_data["AQI"]
 
+    global aggr
     global current_protocol
+
+    json_data = request.json
     current_protocol = json_data["C_Protocol"]
     
+    sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
+    recv_time = get_ntp_time()
+    packet_delay = (recv_time - sent_time).seconds
+
+    json_data["Delay"] = packet_delay
+    json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
     json_data["Time"] = get_time()
+    
     if len(listvalues) >= SERVER_MEASUREMENTS:
         del listvalues[-1]
+
     listvalues.insert(0, json_data
                       #{'MAC': mac,
                       #  'GPS': GPS,
@@ -80,9 +94,10 @@ def updatesensor():
                       #  'Protocol': current_protocol
                       #  }
                        )
+    aggr.update_pandas()
+    bot_handler.telegram_updates()
     # influxdb_post(json_data) # IMPORTANTE!!!!
 
-    
     return "ok"
 
 
@@ -233,9 +248,9 @@ if __name__ == '__main__':
     
     ip=get_IP()
 
-    mqtt_handler = MqttHandler(listvalues)
-    coap_handler = CoapHandler(listvalues, SERVER_IP=ip)
-    bot_handler = TelegramBotHandler(aggr)
+    mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)
+    coap_handler = CoapHandler(listvalues, bot_handler, aggr, SERVER_IP=ip)
+    # stat_handler = DeviceStatHandler.control_updates()
     
 
     app.run(host=ip,port=5000)
@@ -243,7 +258,8 @@ if __name__ == '__main__':
 
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
-    bot_handler.join(0)
+    # bot_handler.join(0)
+    # stat_handler.join(0)
 
 
 
