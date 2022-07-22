@@ -4,7 +4,7 @@ from paho.mqtt import publish, subscribe
 import ast
 
 from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time
+from utility import get_time, get_device_time, get_ntp_time, current_protocol
 from influxdb import influxdb_post
 
 from DeviceStatHandler import DeviceStatHandler
@@ -49,12 +49,18 @@ class MqttHandler:
     @staticmethod
     def get_data(client, userdata, message):
 
+        # global current_protocol
+
         print("[MQTT] DATA RECEIVED")
 
         try:
             json_data = ast.literal_eval(message.payload.decode()) 
 
-            
+            current_protocol["current_protocol"] = json_data["C_Protocol"]
+
+            # print()
+            # print("[MQTT] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
+            # print()            
             sent_time = get_device_time(json_data["Time"])
             recv_time = get_ntp_time()
             packet_delay = (recv_time - sent_time).seconds
@@ -78,5 +84,5 @@ class MqttHandler:
             print()
 
     def update_config(self, params):
-        print("[MQTT] update configs")
+        print("[MQTT] UPDATE CONFIGS")
         publish.single(self.topics[1], str(params), qos=self.qos, hostname=self.server_name)

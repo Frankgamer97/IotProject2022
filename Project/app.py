@@ -1,3 +1,4 @@
+# from lib2to3.pytree import _Results
 from struct import pack
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
@@ -6,12 +7,16 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time, graph_meta
 from influxdb import influxdb_post
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
 
 from datetime import datetime
+
+import pybase64
+from io import BytesIO
+from matplotlib.figure import Figure
 # from DeviceStatHandler import DeviceStatHandler
 
 import os
@@ -48,12 +53,6 @@ def tables():
     return render_template('tables.html', messages=listvalues)
 
 
-
-
-
-
-
-
 # esp32 post its value to the list listvalues
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
@@ -67,14 +66,21 @@ def updatesensor():
     #AQI = json_data["AQI"]
 
     global aggr
-    global current_protocol
+    # global current_protocol
 
     json_data = request.json
-    current_protocol = json_data["C_Protocol"]
+    current_protocol["current_protocol"]= json_data["C_Protocol"]
+
+    # print("[POST] CURRENT PROTOCOL ========> ", current_protocol["current_protocol"])
     
     sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
-    recv_time = get_ntp_time()
-    packet_delay = (recv_time - sent_time).seconds
+    try:
+        recv_time = get_ntp_time()
+    except:
+        print("[WARNING] NTP SERVER NO RESPONSE")
+        recv_time = datetime.now()
+
+    packet_delay = (recv_time - sent_time).total_seconds()
 
     json_data["Delay"] = packet_delay
     json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
@@ -121,6 +127,10 @@ def getsensor():
 def setparams():
     if request.method == 'POST':
         
+        # global current_protocol
+
+        # print("CURRENT PROTOCOL [PRE UPDATING]======> ", current_protocol["current_protocol"])
+
         MAC = request.form['MAC']
         sample_frequency = request.form['sample_frequency']
         min_gas_value = request.form['min_gas_value']
@@ -161,14 +171,19 @@ def setparams():
             post_parameters['max_gas_value']= max_gas_value
             post_parameters['protocol']= get_protocol(protocol)
 
-            
-            if current_protocol == "HTTP":
+            if current_protocol["current_protocol"] == "HTTP":
                 pass
-            if current_protocol == "MQTT":
+            if current_protocol["current_protocol"] == "MQTT":
+                # print("SONO QUI")
                 mqtt_handler.update_config(post_parameters)
             
-            if current_protocol == "COAP":
+            if current_protocol["current_protocol"] == "COAP":
                 pass
+
+
+            print("NEW PROTOCOL: ", protocol)
+            print("OLD PROTOCOL: ", current_protocol)
+            current_protocol["current_protocol"] = protocol
                 
             flash('Parameters updated'.upper(), "success")
             # return redirect(url_for('index'))
@@ -228,7 +243,31 @@ def setinfluxdb():
 
 
 
+@app.route('/graphs/', methods=['GET'])
+def graphs():
+    # global aggr
+    # delay = aggr.build_delay_graph()
+    # ratio = aggr.build_ratio_graph()
+    #
+    # results = {"delay": delay, "ratio": ratio}
+    # if delay is None or ratio is None:
+    #     results = {}
 
+    image = aggr.build_graph("Delay", graph_meta["Delay"]["label"], graph_meta["Delay"]["title"])
+    
+
+    return render_template('graphs.html', data={"graphs": ["Delay","Ratio"], "first_image": image})
+
+@app.route("/getGraph/",methods=['GET'])
+def getGraph():
+    global aggr
+    graph =request.args.get('graph')
+
+
+
+    image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
+
+    return image
 
 @app.route('/aggregation/')
 def aggregation():

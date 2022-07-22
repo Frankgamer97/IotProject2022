@@ -2,11 +2,16 @@
 # as the maximum, minimum, average and standard deviation, computed
 # every n observations, where n is a tunable parameters.
 
+from cmath import nan
 from utility import listvalues
 from utility import set_tunable_window
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from io import BytesIO
 
 import pandas as pd
 import numpy as np
+import pybase64
 
 
 
@@ -15,6 +20,7 @@ class Aggregation:
 
 	def __init__(self):
 		self.df = pd.DataFrame([])
+		self.df_total = self.df.copy()
 		self.max = None
 		self.min = None
 		self.mean = None
@@ -28,6 +34,10 @@ class Aggregation:
 		self.df_total = self.df.copy()
 		self.df = self.df.drop(columns=["MAC","Time","C_Protocol","GPS","AQI"], axis=1, errors='ignore')
 		self.df = self.df.apply(pd.to_numeric, errors='coerce')
+
+		# print()
+		# print(self.df_total)
+		# print()
 
 
 	def get_pandas(self):
@@ -59,15 +69,26 @@ class Aggregation:
 		self.cov = self.df.cov()
 		return self.cov.to_dict()
 
+	def get_protocol_delay(self, protocol):
+
+		mean = self.df_total[self.df_total["C_Protocol"] == protocol]["Delay"].mean()
+		
+		return mean if str(mean) != "nan" else 0
+
 	def get_packet_delivery_ratio(self,protocol):
 		try:
-			packets = 1 + self.df_total[self.df_total["C_Protocol"] == protocol]["C_Protocol"].count()
-			total = 1 + self.df_total["C_Protocol"].count()
+			count_value = self.df_total[self.df_total["C_Protocol"] == protocol]["C_Protocol"].count()
 
+			packets = count_value
+			total = self.df_total["C_Protocol"].count()
+
+			if total == 0:
+				return 0.0
+			
 			return packets / total
 
 		except:
-			return 1.0
+			return 0.0
 
 	def build_aggregate(self):
 		self.update_pandas()
@@ -79,4 +100,53 @@ class Aggregation:
 		if not self.df.empty:
 			return {"max":max, "min":min, "mean":mean, "std":std}
 		else:
-			return {} 
+			return {}
+
+	def build_graph(self,graph, label, title):
+		# print(list(self.df.columns))
+
+		protocols = ["HTTP","MQTT","COAP"]
+		means = []
+
+		if len(list(self.df_total.columns)) == 0:
+			# print("HERE")
+			means = [0]*3
+		else:
+
+			get_graph_data = None
+
+			if graph == "Delay":
+				get_graph_data = self.get_protocol_delay
+			elif graph == "Ratio":
+				get_graph_data = self.get_packet_delivery_ratio
+			else:
+				get_graph_data = self.get_protocol_delay
+
+			means = [get_graph_data(protocol) for protocol in protocols]
+
+		# fig = plt.figure(figsize = (10, 5))
+		# creating the bar plot
+		
+		fig = Figure()
+		ax = fig.subplots()
+		
+		barlist = ax.bar(protocols, means,width = 0.4)
+		if graph == "Ratio":
+			ax.set_ylim(0.0, 1.0)
+		barlist[0].set_color('r')
+		barlist[1].set_color('g')
+		barlist[2].set_color('b')
+
+		# plt.xlabel("Courses offered")
+		ax.set_ylabel(label)
+		ax.set_title(title)
+
+		buf = BytesIO()
+		fig.savefig(buf, format="png")
+		data = pybase64.b64encode(buf.getbuffer()).decode("ascii")
+
+		buf.seek(0)
+		# print("================>IMAGE HASH")
+		# print(hash(data))
+		# print("================>")
+		return f"data:image/png;base64,{data}"

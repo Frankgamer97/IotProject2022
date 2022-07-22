@@ -5,9 +5,9 @@ import pytz
 import os
 import socket  
 
-SERVER_MEASUREMENTS = 19
+SERVER_MEASUREMENTS = 17
 
-current_protocol = "HTTP"
+current_protocol = {"current_protocol": "HTTP"}
 
 mqtt_handler = None
 coap_handler = None
@@ -41,6 +41,11 @@ telegram_bot_update_frequency = 5
 # stat_data_delay = 10
 stat_data_timeout = 10
 stat_data_intervall = 20
+graph_meta={
+    "Delay": {"label": "Seconds", "title": "Average Delay"},
+    "Ratio": {"label": "PDR", "title": "Average PDR"}
+}
+
 
 def set_tunable_window(n):
     SERVER_MEASUREMENTS = n
