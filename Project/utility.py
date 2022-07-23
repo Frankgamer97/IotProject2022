@@ -14,7 +14,7 @@ coap_handler = None
 
 listvalues = []
 
-ip = "192.168.4.1"
+ip = "192.168.1.21"
 
 post_parameters = {
              'MAC':"",

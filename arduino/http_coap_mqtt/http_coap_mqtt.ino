@@ -30,8 +30,8 @@ const int   daylightOffset_sec = 3600;
 
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "TIM-Salentu";//"RouterPi";//"TIM-03859326";
-const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
+const char ssid[] = "RouterPi";//"TIM-Salentu";//"TIM-03859326";
+const char password[] = "raspberry123";//"ScistiASantuVituETeStizzasti5724_@#";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
 /* MQTT broker configuration*/
 const char* MQTT_SERVER="broker.emqx.io";
@@ -44,7 +44,7 @@ const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
 
-IPAddress COAP_SERVER(192, 168, 1, 21);
+IPAddress COAP_SERVER(192, 168, 4, 1);
 int COAP_PORT = 5683;
 boolean Coap_Config = false;
 
@@ -53,8 +53,8 @@ const char* update_api = "update";
 //WifiLocation location(googleApiKey);
 
 //Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.1.21:5000/update-sensor/";
-const char* serverNameGet = "http://192.168.1.21:5000/get-sensor/";
+const char* serverNamePost = "http://192.168.4.1:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.4.1:5000/get-sensor/";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
@@ -115,7 +115,7 @@ String getMonth(String month){
 String getTime(){
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo))
-    Serial.println("Failed to obtain time");
+    Serial.println("[NTP] Failed to obtain time");
   else{
     String now = "";
     char ts_year[5];
@@ -132,26 +132,15 @@ String getTime(){
     strftime(ts_rest,sizeof(ts_rest),"%d %H %M %S", &timeinfo);
     //String rest(ts_rest);
 
-    /*
-    strcat(ts_total,ts_year);
-    strcat(ts_total, " ");
-    strcat(ts_total, ts_month);
-    strcat(ts_total, " ");
-    strcat(ts_total, ts_rest);
-    return ts_total;
-    */
-
     String year(ts_year);
     String month(ts_month);
     String rest(ts_rest);
 
-    return year+" "+getMonth(month)+" "+rest;
-    //now += year;
-    //now += " "+getMonth(month)+" ";
-    //now += rest;
-
-    
+    return year+" "+getMonth(month)+" "+rest;    
   }
+
+  Serial.println("[NTP] Time not received");
+  
   return "";
 }
 
@@ -208,30 +197,47 @@ int getAQI(){
 void WifiConnection(){
 
   WiFi.begin(ssid, password);
-  Serial.println("Connecting");
+  Serial.print("[WiFi] Connecting");
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
-  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println("[WiFi] Connection Established");
+  Serial.print("[WiFi] Ip address: ");
   Serial.println(WiFi.localIP());
 
 }
 
 void MqttConnect(){
   clientMQTT.connect("MYesp32",MQTT_USER,MQTT_PASSWD);
-  while(!clientMQTT.connected())
-    delay(500);
-  Serial.println("[ESTABLISHED] MQTT broker connection");
+
+  int timeout = 10000;
+  int intervall = 500;
+  int count = 0;
+  
+  Serial.print("[MQTT] Connecting");
+  
+  while(count < timeout && !clientMQTT.connected()){
+      Serial.print(".");
+      count += intervall;
+      delay(intervall);
+  }
+  
+  Serial.println("");
+
+  if(count >= timeout)
+    Serial.println("[MQTT] Broker connection timeout");
+  else
+    Serial.println("[MQTT] Broker connection established");
 }
 
 void MqttCallback(char* topic, byte* payload, unsigned int length) {
-  Serial.println("[NEW] MQTT message received");
+  Serial.println("[MQTT] New message received");
   DynamicJsonBuffer jsonBuffer;
   JsonObject &root = jsonBuffer.parseObject(payload);
   if (!root.success()){
-    Serial.println("[ERROR] MQTT change configuration failed");
+    Serial.println("[MQTT] Error parsing message");
   }
   else{
     root.prettyPrintTo(Serial);
@@ -256,12 +262,14 @@ void MqttConfiguration(){
   clientMQTT.setServer(MQTT_SERVER,MQTT_PORT);
   clientMQTT.setCallback(MqttCallback);
   clientMQTT.setBufferSize(1024);
-
+  
   MqttConnect();
   if(!clientMQTT.subscribe(config_topic))
-    Serial.println("[ERROR] MqttConfiguration");
-  else
+    Serial.println("[MQTT] Error configuration");
+  else{
+    Serial.println("[MQTT] Connection established");
     MqttConfig=true;
+  }
 }
 
 /* CoAP*/
@@ -292,7 +300,7 @@ String setParametersFromServer(const char* serverName)
     DynamicJsonBuffer jsonBuffer;
     JsonObject &root = jsonBuffer.parseObject(page);
     if (!root.success()){
-      Serial.println("[ERROR] Parsing parameters json failed");
+      Serial.println("[HTTP] Error parsing parameters json");
     }
     else{
       root.prettyPrintTo(Serial);
@@ -320,14 +328,14 @@ String HTTPGet(const char* serverName){
         payload = http.getString();
       }
       
-      Serial.print("HTTP Response code: ");
+      Serial.print("[HTTP] Response code: ");
       Serial.println(httpResponseCode);
       // Free resources
       http.end(); 
     }
     else 
     {
-      Serial.println("WiFi Disconnected");
+      Serial.println("[WiFi] Disconnected");
     }
   return payload;
 }
@@ -381,54 +389,16 @@ void HTTPost(const char* serverName, String json_output){
         http.addHeader("Content-Type", "application/json");
         int httpResponseCode = http.POST(json_output);
 
-        Serial.print("HTTP Response code: ");
+        Serial.print("[HTTP] Response code: ");
         Serial.println(httpResponseCode);
           
         // Free resources
         http.end();   
     }
     else {
-      Serial.println("WiFi Disconnected");
+      Serial.println("[WiFi] Disconnected");
     } 
 }
-
-
-/*
-        StaticJsonBuffer<200> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        root["GPS"] = getGPS();
-        root["RSSI"] = getRSSI();
-        root["Temperature"] = getTemperature();
-        root["Humidity"] = getHumidity();
-        root["Gas"] = getGas();
-        root["MAC"] = WiFi.macAddress();
-        root.printTo(Serial);
-        Serial.println();
-        char json_str[100];
-        root.prettyPrintTo(json_str, sizeof(json_str));
-*/
-
-/*
-
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        root["GPS"] = getGPS();
-        root["RSSI"] = getRSSI();
-        root["Temperature"] = getTemperature();
-        root["Humidity"] = getHumidity();
-        root["Gas"] = getGas();
-        root["MAC"] = WiFi.macAddress();
-
-        root.prettyPrintTo(Serial);
-        Serial.println();
-        Serial.println(sizeof(jsonBuffer));
-        Serial.println(sizeof(root));
-
-        
-        String json_str;
-        root.prettyPrintTo(json_str);//, sizeof(json_str));
-        
-*/
 
 /* ESP32 WORK-FLOW */
 
@@ -477,11 +447,12 @@ void loop() {
       else if (protocol==2)
       {
 	      Serial.println();
-        Serial.println("Using MQTT");
+        Serial.println("Using Mqtt");
         if(!MqttConfig)
           MqttConfiguration();
+        
         boolean published_data = MqttPublishData(data_topic,getJson());
-        Serial.print("Data published: ");
+        Serial.print("[MQTT] Data published: ");
         Serial.println(published_data);
       }
       
