@@ -72,13 +72,20 @@ def updatesensor():
     current_protocol["current_protocol"]= json_data["C_Protocol"]
 
     # print("[POST] CURRENT PROTOCOL ========> ", current_protocol["current_protocol"])
-    
-    sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
+    sent_time = None
+    recv_time = None 
+    packet_delay = 0
+
     try:
+        sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
         recv_time = get_ntp_time()
     except:
         print("[WARNING] NTP SERVER NO RESPONSE")
-        recv_time = datetime.now()
+        
+        if recv_time is None:
+            recv_time = datetime.now()
+        if sent_time is None:
+            sent_time = recv_time
 
     packet_delay = (recv_time - sent_time).total_seconds()
 

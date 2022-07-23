@@ -37,9 +37,24 @@ class CoapServer(resource.Resource):
             json_data = request.payload.decode()
             json_data = ast.literal_eval(json_data)  
 
-            sent_time = get_device_time(json_data["Time"])
-            recv_time = get_ntp_time()
-            packet_delay = (recv_time - sent_time).seconds
+            sent_time = None
+            recv_time = None
+            packet_delay = 0
+            
+            try:
+                sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
+                recv_time = get_ntp_time()
+            except:
+                print("[WARNING] NTP SERVER NO RESPONSE")
+                
+                if recv_time is None:
+                    recv_time = datetime.now()
+                if sent_time is None:
+                    sent_time = recv_time
+
+            # sent_time = get_device_time(json_data["Time"])
+            # recv_time = get_ntp_time()
+            # packet_delay = (recv_time - sent_time).seconds
             
             json_data["Delay"] = packet_delay
             json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
