@@ -15,6 +15,7 @@
 //#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
 #include "Time.h"
 
+char* user_id = "";
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
@@ -30,8 +31,8 @@ const int   daylightOffset_sec = 3600;
 
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "RouterPi";//"TIM-Salentu";//"TIM-03859326";
-const char password[] = "raspberry123";//"ScistiASantuVituETeStizzasti5724_@#";//"f5R235Dhc5bdYbCUtGfKH6zP";
+const char ssid[] = "TIM-Salentu";//"RouterPi";//"TIM-03859326";
+const char password[] = "ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
 /* MQTT broker configuration*/
 const char* MQTT_SERVER="broker.emqx.io";
@@ -44,7 +45,7 @@ const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
 
-IPAddress COAP_SERVER(192, 168, 4, 1);
+IPAddress COAP_SERVER(192, 168, 1, 21);
 int COAP_PORT = 5683;
 boolean Coap_Config = false;
 
@@ -53,8 +54,8 @@ const char* update_api = "update";
 //WifiLocation location(googleApiKey);
 
 //Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.4.1:5000/update-sensor/";
-const char* serverNameGet = "http://192.168.4.1:5000/get-sensor/";
+const char* serverNamePost = "http://192.168.1.21:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.1.21:5000/get-sensor/";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
@@ -244,7 +245,8 @@ void MqttCallback(char* topic, byte* payload, unsigned int length) {
     sample_frequency = root["sample_frequency"];
     min_gas_value = root["min_gas_value"];
     max_gas_value = root["max_gas_value"];
-    protocol = root["protocol"];    
+    protocol = root["protocol"];
+    user_id = root["user_id'"];    
   }
 }
 
@@ -308,7 +310,7 @@ String setParametersFromServer(const char* serverName)
       min_gas_value = root["min_gas_value"];
       max_gas_value = root["max_gas_value"];
       protocol = root["protocol"];
-      
+      user_id = root["user_id'"];
     }
   return page;
  

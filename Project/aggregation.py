@@ -32,7 +32,7 @@ class Aggregation:
 	def update_pandas(self):
 		self.df = pd.DataFrame(listvalues)
 		self.df_total = self.df.copy()
-		self.df = self.df.drop(columns=["MAC","Time","C_Protocol","GPS","AQI"], axis=1, errors='ignore')
+		self.df = self.df.drop(columns=["MAC", "DeviceId","Time","C_Protocol","GPS","AQI"], axis=1, errors='ignore')
 		self.df = self.df.apply(pd.to_numeric, errors='coerce')
 
 		# print()

@@ -7,7 +7,9 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time
+from utility import get_ntp_time, getDeviceId, getAllDevices, getMac
+
 from utility import graph_meta, graph_intervall
 from influxdb import influxdb_post
 from aggregation import Aggregation
@@ -97,6 +99,8 @@ def updatesensor():
     if len(listvalues) >= SERVER_MEASUREMENTS:
         del listvalues[-1]
 
+    json_data["DeviceId"] = getDeviceId(json_data["MAC"])
+
     listvalues.insert(0, json_data
                       #{'MAC': mac,
                       #  'GPS': GPS,
@@ -121,6 +125,7 @@ def updatesensor():
 def getsensor():
     #to write a json inizialize the variable with the name of the attribute
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
+
     return jsonify(
         post_parameters
         #sample_frequency=post_parameters["sample_frequency"],
@@ -139,7 +144,8 @@ def setparams():
 
         # print("CURRENT PROTOCOL [PRE UPDATING]======> ", current_protocol["current_protocol"])
 
-        MAC = request.form['MAC']
+        device_id = request.form.get('DeviceId')
+        MAC = getMac(device_id) 
         sample_frequency = request.form['sample_frequency']
         min_gas_value = request.form['min_gas_value']
         max_gas_value = request.form['max_gas_value']
@@ -174,6 +180,7 @@ def setparams():
         
         if is_ok:
             post_parameters['MAC']= MAC
+            post_parameters['user_id']= device_id
             post_parameters['sample_frequency']= sample_frequency
             post_parameters['min_gas_value']= min_gas_value
             post_parameters['max_gas_value']= max_gas_value
@@ -197,7 +204,13 @@ def setparams():
             # return redirect(url_for('index'))
 
     protocols=[{'name':'HTTP'}, {'name':'COAP'}, {'name':'MQTT'}]
-    return render_template('set_parameters.html',prot=protocols)
+    devices = getAllDevices()
+
+    data = {
+        "protocols": protocols,
+        "devices": devices
+    }
+    return render_template('set_parameters.html', data=data)
 
 
 # check influx params

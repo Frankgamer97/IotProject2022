@@ -5,7 +5,7 @@ import aiocoap
 import ast
 from threading import Thread
 from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId
 from influxdb import influxdb_post
 from datetime import datetime
 from DeviceStatHandler import DeviceStatHandler
@@ -60,7 +60,9 @@ class CoapServer(resource.Resource):
             json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
 
             json_data["Time"] = get_time()
-            
+            json_data["DeviceId"] = getDeviceId(json_data["MAC"])
+
+
             if len(self.list_values) == SERVER_MEASUREMENTS:
                 del self.list_values[-1]
 

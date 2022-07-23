@@ -18,6 +18,7 @@ ip = "192.168.1.21"
 
 post_parameters = {
              'MAC':"",
+             'user_id':"",
              'sample_frequency': "5000",
              'min_gas_value': "0",
              'max_gas_value': "10000",
@@ -47,6 +48,11 @@ graph_meta={
 }
 
 graph_intervall = 2000
+
+user_dict = {}
+mac_dict = {}
+
+# #######devices_config = {}
 
 
 def set_tunable_window(n):
@@ -99,3 +105,21 @@ def get_protocol(prot):
         return 1
     elif prot=="MQTT":
         return 2
+
+
+def getMac(user_id):
+    return user_dict[user_id]
+
+def getAllDevices():
+    return list(user_dict.keys())
+
+def getDeviceId(mac):
+    mac_keys = mac_dict.keys()
+    if mac in mac_keys:
+        return mac_dict[mac]
+    else:
+        user_id = "Esp32_"+str(len(mac_keys))
+        mac_dict[mac] = user_id
+        user_dict[user_id] = mac
+
+        return user_id

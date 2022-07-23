@@ -5,57 +5,66 @@
 {% endblock %}
 
 
-{% block title %}   SET ESP32 PARAMETERS  {% endblock %}
+{% block title %} SET ESP32 PARAMETERS {% endblock %}
 
 {% block inner %}
-    <hr>
-    <div class="content">
-        {% with messages = get_flashed_messages(with_categories=true)%}
-        {% for C,M in messages %}
-            <div class="{{ C }}">{{ M }}</div>
+<hr>
+<div class="content">
+  {% with messages = get_flashed_messages(with_categories=true)%}
+  {% for C,M in messages %}
+  <div class="{{ C }}">{{ M }}</div>
+  {% endfor %}
+  {% endwith%}
+
+
+</div>
+
+<form method="post">
+
+  <div class="form-group">
+    <div class="input-group">
+      <span class="input-group-addon"><b>DEVICE</b></span>
+      <select name="DeviceId" class="selectpicker form-control">
+        {% for device in data["devices"] %}
+        <option value="{{ device }}">{{ device }}</option>
         {% endfor %}
-        {% endwith%}
-        
-
+      </select>
     </div>
-  
-    <form  method="post">
+  </div>
 
-      <div class="form-group">
-        <label for="sample_frequency">DEVICE ADDRESS (MAC)</label>
-        <input type="text" class="form-control" name="MAC" placeholder="00:00:00:00:00:00" value="{{ request.form['MAC'] }}"></input>
-      </div>
-
-      <div class="form-group">
-        <label for="sample_frequency">FREQUENCY</label>
-        <input type="text" class="form-control" name="sample_frequency" placeholder="5000" value="{{ request.form['sample_frequency'] }}"></input>
-      </div>
+  <div class="form-group">
+    <label for="sample_frequency">FREQUENCY</label>
+    <input type="text" class="form-control" name="sample_frequency" placeholder="5000"
+      value="{{ request.form['sample_frequency'] }}"></input>
+  </div>
 
 
-      <div class="form-group">
-        <label for="min_gas_value">MIN GAS VALUE</label>
-        <input type="text" class="form-control" name="min_gas_value" placeholder="0"value="{{ request.form['min_gas_value'] }}"></input>
-      </div>
+  <div class="form-group">
+    <label for="min_gas_value">MIN GAS VALUE</label>
+    <input type="text" class="form-control" name="min_gas_value" placeholder="0"
+      value="{{ request.form['min_gas_value'] }}"></input>
+  </div>
 
-        <div class="form-group">
-        <label for="max_gas_value">MAX GAS VALUE</label>
-        <input type="text" class="form-control" name="max_gas_value" placeholder="10000"value="{{ request.form['max_gas_value'] }}"></input>
-      </div>
+  <div class="form-group">
+    <label for="max_gas_value">MAX GAS VALUE</label>
+    <input type="text" class="form-control" name="max_gas_value" placeholder="10000"
+      value="{{ request.form['max_gas_value'] }}"></input>
+  </div>
 
-      <div class="form-group">
-        <div class="input-group">
-            <span class="input-group-addon"><b>PROTOCOL</b></span>
-                <select name="comp_select" class="selectpicker form-control">
-                  {% for o in prot %}
-                  <option value="{{ o.name }}">{{ o.name }}</option>
-                  {% endfor %}
-                </select>
-        </div> 
-      </div>
+  <div class="form-group">
+    <div class="input-group">
+      <span class="input-group-addon"><b>PROTOCOL</b></span>
+      <select name="comp_select" class="selectpicker form-control">
+        {% for protocol in data["protocols"] %}
+        <option value="{{ protocol.name }}">{{ protocol.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
 
 
-      <button type="submit" class="btn btn-primary">Update Parameters</button>
-    </form>
+  <button type="submit" class="btn btn-primary">Update Parameters</button>
+</form>
 
-   
+
 {% endblock %}

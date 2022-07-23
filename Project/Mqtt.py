@@ -4,7 +4,8 @@ from paho.mqtt import publish, subscribe
 import ast
 
 from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time, current_protocol
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId
+from utility import current_protocol
 from influxdb import influxdb_post
 
 from DeviceStatHandler import DeviceStatHandler
@@ -89,6 +90,9 @@ class MqttHandler:
                 del MqttHandler.list_values[-1]
 
             json_data["Time"] = get_time()
+            json_data["DeviceId"] = getDeviceId(json_data["MAC"])
+
+
             MqttHandler.list_values.insert(0,json_data)
             MqttHandler.aggr_handler.update_pandas()
 
