@@ -46,6 +46,8 @@ graph_meta={
     "Ratio": {"label": "PDR", "title": "Average PDR"}
 }
 
+graph_intervall = 2000
+
 
 def set_tunable_window(n):
     SERVER_MEASUREMENTS = n

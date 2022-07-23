@@ -7,7 +7,8 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time, graph_meta
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, get_ntp_time
+from utility import graph_meta, graph_intervall
 from influxdb import influxdb_post
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
@@ -252,18 +253,14 @@ def setinfluxdb():
 
 @app.route('/graphs/', methods=['GET'])
 def graphs():
-    # global aggr
-    # delay = aggr.build_delay_graph()
-    # ratio = aggr.build_ratio_graph()
-    #
-    # results = {"delay": delay, "ratio": ratio}
-    # if delay is None or ratio is None:
-    #     results = {}
+    global graph_intervall
+    global graph_meta
+    global aggr
 
     image = aggr.build_graph("Delay", graph_meta["Delay"]["label"], graph_meta["Delay"]["title"])
-    
+    data = {"graphs": ["Delay","Ratio"], "first_image": image, "intervall": graph_intervall}
 
-    return render_template('graphs.html', data={"graphs": ["Delay","Ratio"], "first_image": image})
+    return render_template('graphs.html', data=data)
 
 @app.route("/getGraph/",methods=['GET'])
 def getGraph():
