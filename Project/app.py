@@ -108,11 +108,6 @@ def updatesensor():
     current_protocol["current_protocol"]= json_data["C_Protocol"]
     updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
 
-
-    print()
-    print("[HTTP] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
-    print() 
-
     listvalues.insert(0, json_data
                       #{'MAC': mac,
                       #  'GPS': GPS,
@@ -140,14 +135,6 @@ def getsensor():
 
     config = getConfig(request.remote_addr)
 
-    print()
-    print()
-    print()
-    print("[HTTP] CONFIG: ")
-    print(config)
-    print()
-    print()
-    print()
     return jsonify(
         config# post_parameters
         #sample_frequency=post_parameters["sample_frequency"],
@@ -177,7 +164,6 @@ def setparams():
             remote_ip = getIpByUserId(userid)
             MAC = getMac(remote_ip) 
             remote_configs = getConfig(remote_ip)
-            print("SONO QUI", remote_configs)
             
             sample_frequency = request.form['sample_frequency']
             min_gas_value = request.form['min_gas_value']
@@ -219,14 +205,6 @@ def setparams():
                 remote_configs['max_gas_value']= max_gas_value
                 remote_configs['protocol']= protocol# get_protocol(protocol)
 
-                print()
-                print()
-                print()
-                print("[Set-Parameters] CONFIG: ")
-                print(remote_configs)
-                print()
-                print()
-                print()
                 if current_protocol["current_protocol"] == "HTTP":
                     pass
                 if current_protocol["current_protocol"] == "MQTT":
@@ -236,9 +214,6 @@ def setparams():
                 if current_protocol["current_protocol"] == "COAP":
                     pass
 
-
-                print("NEW PROTOCOL: ", protocol)
-                print("OLD PROTOCOL: ", current_protocol)
                 current_protocol["current_protocol"] = protocol
                     
                 flash('Parameters updated'.upper(), "success")
@@ -257,8 +232,7 @@ def setparams():
         }
 
     if is_ok:
-        
-        print("[SET-PARAM] remote config", remote_configs)
+        # print("[SET-PARAM] remote config", remote_configs)
         protocols = sort_protocol(remote_configs, protocols)
         
         devices = getAllDevices()
@@ -373,7 +347,6 @@ def aggregate():
 
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
-    print("FIRST POST PARAMETRS",post_parameters)
     ip=get_IP()
 
     mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)

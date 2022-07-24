@@ -173,9 +173,6 @@ def sort_protocol(config, protocol_list):
     # print(type(config["protocol"]))
     # print()
 
-    print("BEFORE SORTING: PROTOCOL: ", config["protocol"])
-    print(type(config["protocol"]))
-
     config_protocol = str(config["protocol"])
     ordered.append(config_protocol)
     
@@ -256,7 +253,6 @@ def getConfigByUserId():
     user_config_dict = {}
 
     for userid, ip in userid_ip_dict.items():
-        print("porco dio", userid, ip)
         config = ip_config_dict[ip]
         user_config_dict[userid] = config
 
@@ -264,11 +260,6 @@ def getConfigByUserId():
 
 def updateConfigProtocol(ip, protocol):
 
-    print("ARA ARA (,-.): ", protocol)
     assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
-    print("ARA ARA")
-    print(list(ip_config_dict.keys()))
     assert ip in ip_config_dict.keys()
-    print(f"[UTILITY] current protocol was{current_protocol['current_protocol']}")
-    print(f"[UTILITY] Updating protocol from  {ip} with {protocol}")
     ip_config_dict[ip]["protocol"] = protocol

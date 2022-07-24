@@ -53,6 +53,10 @@ class CoapServer(resource.Resource):
                     sent_time = recv_time
 
 
+
+            current_protocol["current_protocol"]= json_data["C_Protocol"]
+            updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
+
             # sent_time = get_device_time(json_data["Time"])
             # recv_time = get_ntp_time()
             # packet_delay = (recv_time - sent_time).seconds
@@ -65,13 +69,6 @@ class CoapServer(resource.Resource):
             json_data["DeviceId"] = getDeviceId(json_data["IP"])
             setMac(json_data["IP"], json_data["MAC"])
 
-            current_protocol["current_protocol"]= json_data["C_Protocol"]
-            updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
-
-            print()
-            print("[COAP] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
-            print()            
-            
 
             if len(self.list_values) == SERVER_MEASUREMENTS:
                 del self.list_values[-1]

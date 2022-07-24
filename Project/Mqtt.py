@@ -78,7 +78,6 @@ class MqttHandler:
 
             json_data["Delay"] = packet_delay
             json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
-
             json_data["Time"] = get_time()
 
             getConfig(json_data["IP"])
@@ -86,19 +85,11 @@ class MqttHandler:
             setMac(json_data["IP"], json_data["MAC"])
 
             current_protocol["current_protocol"] = json_data["C_Protocol"]
-
-            print(json_data["IP"])
-            print(json_data["C_Protocol"])
             updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
-            print()
-            print("[MQTT] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
-            print() 
-
-
 
             if len(MqttHandler.list_values) > SERVER_MEASUREMENTS:
                 del MqttHandler.list_values[-1]
-                
+
             MqttHandler.list_values.insert(0,json_data)
             MqttHandler.aggr_handler.update_pandas()
 
@@ -112,15 +103,6 @@ class MqttHandler:
 
     def update_config(self, params):
         print("[MQTT] UPDATE CONFIGS")
-
         # config = getConfig(request.remote_addr)
-
-        print()
-        print()
-        print()
-        print("[MQTT] CONFIG: ")
-        print(params)
-        print()
-        print()
-        print()
+        
         publish.single(self.topics[1], str(params), qos=self.qos, hostname=self.server_name)
