@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from copy import deepcopy
+from operator import pos
 import ntplib
 
 import pytz
@@ -15,14 +17,14 @@ coap_handler = None
 listvalues = []
 
 ip = "192.168.1.21"
-
+#{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
              'user_id':"",
              'sample_frequency': "5000",
              'min_gas_value': "0",
              'max_gas_value': "10000",
-             'protocol': "0"
+             'protocol': "HTTP"
              }
 
 influx_parameters = {
@@ -47,10 +49,22 @@ graph_meta={
     "Ratio": {"label": "PDR", "title": "Average PDR"}
 }
 
-graph_intervall = 2000
+graph_intervall = 500
 
-user_dict = {}
-mac_dict = {}
+ip_userid_dict = {}
+userid_ip_dict = {}
+
+ip_mac_dict = {}
+ip_config_dict = {}
+
+# user_mac_dict = {} # "user_id: MAC"
+# user_ip_dict = {} # 'user_id': 'ip'
+
+# mac_user_dict = {} # "MAC: user_id"
+
+# mac_ip_dict = {} # "MAC: IP"
+# ip_configs_dict = {} # "IP: { CONFIGURATION }"
+
 
 # #######devices_config = {}
 
@@ -106,20 +120,155 @@ def get_protocol(prot):
     elif prot=="MQTT":
         return 2
 
-
+'''
 def getMac(user_id):
-    return user_dict[user_id]
+    return user_mac_dict[user_id]
 
 def getAllDevices():
-    return list(user_dict.keys())
+    return list(user_mac_dict.keys())
 
-def getDeviceId(mac):
-    mac_keys = mac_dict.keys()
+def getDeviceId(mac, ip = None):
+    mac_keys = mac_user_dict.keys()
     if mac in mac_keys:
-        return mac_dict[mac]
+        return mac_user_dict[mac]
     else:
         user_id = "Esp32_"+str(len(mac_keys))
-        mac_dict[mac] = user_id
-        user_dict[user_id] = mac
+        mac_user_dict[mac] = user_id
+        user_mac_dict[user_id] = mac
 
+        if ip is None:
+            print("[getDeviceId] ERRORE BHOOO")
+        else:
+            mac_ip_dict[mac] = ip
+            user_ip_dict[user_id] = ip
         return user_id
+
+def getRemoteIp(mac):
+    if mac in mac_ip_dict.keys():
+        return mac_ip_dict[mac]
+    return None
+'''
+
+'''
+def getConfig(ip):
+    if ip not in ip_configs_dict.keys():
+        ip_configs_dict[ip] = deepcopy(post_parameters)
+
+    return ip_configs_dict[ip]
+
+def getConfigByUserId():
+    user_config_dict = {}
+
+    for user, ip in user_ip_dict.items():
+        config = ip_configs_dict[ip]
+        user_config_dict[user] = config
+
+    return user_config_dict
+'''
+def sort_protocol(config, protocol_list):
+    ordered = []
+
+    # print()
+    # print("config protocl: ", config["protocol"])
+    # print(type(config["protocol"]))
+    # print()
+
+    print("BEFORE SORTING: PROTOCOL: ", config["protocol"])
+    print(type(config["protocol"]))
+
+    config_protocol = str(config["protocol"])
+    ordered.append(config_protocol)
+    
+    # if config_protocol == "0":
+    #     ordered.append("HTTP")
+    # elif config_protocol == "1":
+    #     ordered.append("COAP")
+    # elif config_protocol == "2":
+    #     ordered.append("MQTT")
+    # else:
+    #     print("[sort_protocols] No config protocol found")
+
+    for protocol in protocol_list:
+        if protocol != ordered[0]:
+            ordered.append(protocol)
+
+    return ordered
+
+
+
+
+# ip_userid_dict = {}
+# userid_ip_dict = {}
+
+# ip_mac_dict = {}
+# ip_config_dict = {}
+
+
+def getDeviceId(ip):
+    ip_keys = ip_userid_dict.keys()
+    if ip not in ip_keys:
+        userid = "Esp32_"+str(len(ip_keys))
+        ip_userid_dict[ip] = userid
+        userid_ip_dict[userid] = ip
+
+    return ip_userid_dict[ip]
+
+def getIpByUserId(userid):
+    return userid_ip_dict[userid] 
+
+def setMac(ip,mac):
+    ip_mac_keys = list(ip_mac_dict.keys())
+    if ip not in ip_mac_keys:
+        ip_mac_dict[ip] = mac
+
+        config = getConfig(ip)
+        config["MAC"] = mac
+
+def getMac(ip):
+    return ip_mac_dict[ip]
+    
+def getConfig(ip):
+    ip_config_keys = list(ip_config_dict.keys())
+    if ip not in ip_config_keys:
+        ip_config_dict[ip] = deepcopy(post_parameters)
+
+        userid = getDeviceId(ip)
+        # mac = getMac(ip)
+
+        # ip_config_dict[ip]["MAC"] = mac
+        ip_config_dict[ip]["user_id"] = userid
+
+    return ip_config_dict[ip]  
+        
+
+def getFirstConfig():
+
+    ip_config_keys = list(ip_config_dict.keys())
+    if len(ip_config_keys) == 0:
+        print("[getFirstConfig] No device found")
+        return post_parameters
+    return ip_config_dict[ip_config_keys[0]]
+
+def getAllDevices():
+    return list(userid_ip_dict.keys())
+
+def getConfigByUserId():
+    user_config_dict = {}
+
+    for userid, ip in userid_ip_dict.items():
+        print("porco dio", userid, ip)
+        config = ip_config_dict[ip]
+        user_config_dict[userid] = config
+
+    return user_config_dict
+
+def updateConfigProtocol(ip, protocol):
+
+    print("ARA ARA (,-.): ", protocol)
+    assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
+    print("ARA ARA")
+    print(list(ip_config_dict.keys()))
+    assert ip in ip_config_dict.keys()
+    print(f"[UTILITY] current protocol was{current_protocol['current_protocol']}")
+    print(f"[UTILITY] Updating protocol from  {ip} with {protocol}")
+    ip_config_dict[ip]["protocol"] = protocol

@@ -4,7 +4,7 @@ from paho.mqtt import publish, subscribe
 import ast
 
 from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time, getDeviceId
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
 from utility import current_protocol
 from influxdb import influxdb_post
 
@@ -55,14 +55,7 @@ class MqttHandler:
         print("[MQTT] DATA RECEIVED")
 
         try:
-            json_data = ast.literal_eval(message.payload.decode()) 
-
-            current_protocol["current_protocol"] = json_data["C_Protocol"]
-
-            # print()
-            # print("[MQTT] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
-            # print()            
-            
+            json_data = ast.literal_eval(message.payload.decode())            
 
             sent_time = None
             recv_time = None
@@ -86,13 +79,26 @@ class MqttHandler:
             json_data["Delay"] = packet_delay
             json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
 
+            json_data["Time"] = get_time()
+
+            getConfig(json_data["IP"])
+            json_data["DeviceId"] = getDeviceId(json_data["IP"])
+            setMac(json_data["IP"], json_data["MAC"])
+
+            current_protocol["current_protocol"] = json_data["C_Protocol"]
+
+            print(json_data["IP"])
+            print(json_data["C_Protocol"])
+            updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
+            print()
+            print("[MQTT] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
+            print() 
+
+
+
             if len(MqttHandler.list_values) > SERVER_MEASUREMENTS:
                 del MqttHandler.list_values[-1]
-
-            json_data["Time"] = get_time()
-            json_data["DeviceId"] = getDeviceId(json_data["MAC"])
-
-
+                
             MqttHandler.list_values.insert(0,json_data)
             MqttHandler.aggr_handler.update_pandas()
 
@@ -106,4 +112,15 @@ class MqttHandler:
 
     def update_config(self, params):
         print("[MQTT] UPDATE CONFIGS")
+
+        # config = getConfig(request.remote_addr)
+
+        print()
+        print()
+        print()
+        print("[MQTT] CONFIG: ")
+        print(params)
+        print()
+        print()
+        print()
         publish.single(self.topics[1], str(params), qos=self.qos, hostname=self.server_name)

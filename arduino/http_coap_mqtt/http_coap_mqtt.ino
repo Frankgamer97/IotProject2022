@@ -15,7 +15,7 @@
 //#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
 #include "Time.h"
 
-char* user_id = "";
+String user_id = "";
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
@@ -71,7 +71,7 @@ float gas = 0;
 float gps = 0;
 float rssi = 0;
 
-int protocol = 0; /* {0: http, 1: coap, 2: mqtt */
+String protocol = "HTTP"; /* {0: http, 1: coap, 2: mqtt */
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
@@ -146,13 +146,14 @@ String getTime(){
 }
 
 String getProtocol(){
-  if(protocol == 0)
+  /*if(protocol == 0)
     return "HTTP";
   else if(protocol == 1)
     return "COAP";
   else if(protocol == 2)
     return "MQTT";
-  return "HTTP" ;
+  return "HTTP" ;*/
+  return protocol;
 }
 
 float getGPS(int coord){
@@ -245,8 +246,8 @@ void MqttCallback(char* topic, byte* payload, unsigned int length) {
     sample_frequency = root["sample_frequency"];
     min_gas_value = root["min_gas_value"];
     max_gas_value = root["max_gas_value"];
-    protocol = root["protocol"];
-    user_id = root["user_id'"];    
+    protocol = root["protocol"].as<String>();
+    user_id = root["user_id"].as<String>();    
   }
 }
 
@@ -309,8 +310,8 @@ String setParametersFromServer(const char* serverName)
       sample_frequency = root["sample_frequency"];
       min_gas_value = root["min_gas_value"];
       max_gas_value = root["max_gas_value"];
-      protocol = root["protocol"];
-      user_id = root["user_id'"];
+      protocol = root["protocol"].as<String>();
+      user_id = root["user_id"].as<String>();
     }
   return page;
  
@@ -361,6 +362,7 @@ String getJson()
         root["MAC"] = WiFi.macAddress();
         root["C_Protocol"] = getProtocol();
         root["Time"] = getTime();
+        root["IP"] =  WiFi.localIP().toString();
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
@@ -409,23 +411,22 @@ void setup() {
   dht.begin();
   pinMode(MQ2PIN,INPUT);
   WifiConnection();
-  if(protocol == 2)
+  if(protocol == (String)"MQTT")
     MqttConfiguration();
-  else if(protocol == 1)
+  else if(protocol == (String)"COAP")
     CoapConfiguration();
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 }
 
 void loop() {
-
   if ((millis() - last_sample) > sample_frequency) {
     Serial.println();
     Serial.println("======================");
     Serial.print("Timer set to ");
     Serial.println(sample_frequency);
 
-      if (protocol==0)
+      if (protocol==(String)"HTTP")
       {
 	      Serial.println();
 	      Serial.println("Using HTTP");
@@ -433,7 +434,7 @@ void loop() {
         page = setParametersFromServer(serverNameGet);
         HTTPost(serverNamePost,getJson());
       }
-      else if (protocol==1)
+      else if (protocol==(String)"COAP")
       {
 	      String page = "";
         page = setParametersFromServer(serverNameGet);
@@ -446,7 +447,7 @@ void loop() {
        
         coap.put(COAP_SERVER, COAP_PORT, update_api, getJson().c_str());
       }      
-      else if (protocol==2)
+      else if (protocol==(String)"MQTT")
       {
 	      Serial.println();
         Serial.println("Using Mqtt");
@@ -460,8 +461,18 @@ void loop() {
       
       last_sample = millis();
   }
-  if(protocol == 1)
-    coap.loop();
-  else if(protocol == 2)
-    clientMQTT.loop();
+  if(protocol == (String)"COAP"){
+    if(!coap.loop()){
+      Serial.println("[COAP] Disconnected to server");
+      Coap_Config = false;
+     }
+  }
+  else if(protocol == (String)"MQTT"){
+    //clientMQTT.loop();
+    if (!clientMQTT.loop()){
+      //clientMQTT.disconnect();
+      Serial.println("[MQTT]Disconnected to Broker");
+      MqttConfig = false;
+    }
+   }
 }

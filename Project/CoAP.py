@@ -4,8 +4,8 @@ import aiocoap.resource as resource
 import aiocoap
 import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time, getDeviceId
+from utility import SERVER_MEASUREMENTS, current_protocol
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
 from influxdb import influxdb_post
 from datetime import datetime
 from DeviceStatHandler import DeviceStatHandler
@@ -52,6 +52,7 @@ class CoapServer(resource.Resource):
                 if sent_time is None:
                     sent_time = recv_time
 
+
             # sent_time = get_device_time(json_data["Time"])
             # recv_time = get_ntp_time()
             # packet_delay = (recv_time - sent_time).seconds
@@ -60,8 +61,17 @@ class CoapServer(resource.Resource):
             json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
 
             json_data["Time"] = get_time()
-            json_data["DeviceId"] = getDeviceId(json_data["MAC"])
+            getConfig(json_data["IP"])
+            json_data["DeviceId"] = getDeviceId(json_data["IP"])
+            setMac(json_data["IP"], json_data["MAC"])
 
+            current_protocol["current_protocol"]= json_data["C_Protocol"]
+            updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
+
+            print()
+            print("[COAP] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
+            print()            
+            
 
             if len(self.list_values) == SERVER_MEASUREMENTS:
                 del self.list_values[-1]

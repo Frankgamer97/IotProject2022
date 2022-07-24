@@ -1,4 +1,5 @@
 # from lib2to3.pytree import _Results
+from pdb import post_mortem
 from struct import pack
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
@@ -6,9 +7,11 @@ from flask_bootstrap import Bootstrap
 from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
-from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, post_parameters, influx_parameters, mqtt_handler, coap_handler
+from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler, coap_handler
 from utility import get_time, is_int, get_protocol, get_IP, get_device_time
-from utility import get_ntp_time, getDeviceId, getAllDevices, getMac
+from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
+from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
+from utility import post_parameters
 
 from utility import graph_meta, graph_intervall
 from influxdb import influxdb_post
@@ -71,9 +74,8 @@ def updatesensor():
     global aggr
     # global current_protocol
 
-    json_data = request.json
-    current_protocol["current_protocol"]= json_data["C_Protocol"]
-
+    json_data = request.json           
+    
     # print("[POST] CURRENT PROTOCOL ========> ", current_protocol["current_protocol"])
     sent_time = None
     recv_time = None 
@@ -98,8 +100,18 @@ def updatesensor():
     
     if len(listvalues) >= SERVER_MEASUREMENTS:
         del listvalues[-1]
+    # print("REMOTE ADDRESS:---->",request.remote_addr)
+    getConfig(json_data["IP"])
+    json_data["DeviceId"] = getDeviceId(json_data["IP"])
+    setMac(json_data["IP"], json_data["MAC"])
 
-    json_data["DeviceId"] = getDeviceId(json_data["MAC"])
+    current_protocol["current_protocol"]= json_data["C_Protocol"]
+    updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
+
+
+    print()
+    print("[HTTP] CURRENT PROTOCOL =====> ", current_protocol["current_protocol"])
+    print() 
 
     listvalues.insert(0, json_data
                       #{'MAC': mac,
@@ -126,8 +138,18 @@ def getsensor():
     #to write a json inizialize the variable with the name of the attribute
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
 
+    config = getConfig(request.remote_addr)
+
+    print()
+    print()
+    print()
+    print("[HTTP] CONFIG: ")
+    print(config)
+    print()
+    print()
+    print()
     return jsonify(
-        post_parameters
+        config# post_parameters
         #sample_frequency=post_parameters["sample_frequency"],
         #min_gas_value=post_parameters["min_gas_value"],
         #max_gas_value=post_parameters["max_gas_value"],
@@ -138,78 +160,128 @@ def getsensor():
 #a little form to update the json post_parameters
 @app.route('/set-parameters/', methods=('GET', 'POST'))
 def setparams():
+    is_ok = True
+
     if request.method == 'POST':
         
         # global current_protocol
 
         # print("CURRENT PROTOCOL [PRE UPDATING]======> ", current_protocol["current_protocol"])
 
-        device_id = request.form.get('DeviceId')
-        MAC = getMac(device_id) 
-        sample_frequency = request.form['sample_frequency']
-        min_gas_value = request.form['min_gas_value']
-        max_gas_value = request.form['max_gas_value']
-        protocol = request.form.get('comp_select')
-
-        is_ok = True
-
-        if not MAC:
-            MAC = ""
-        if not sample_frequency:
-            sample_frequency=post_parameters["sample_frequency"]# flash('frequency is required!'.upper(), "alert")
-        if not is_int(sample_frequency):
+        if len(getAllDevices()) == 0 or not request.form.get('DeviceId'):
             is_ok = False
-            flash('frequency must be a number!'.upper(), "alert")
-        elif not int(sample_frequency) >= 0:
-            is_ok = False
-            flash('negative sample frequency!'.upper(), "alert")
-
-        if not min_gas_value:
-            min_gas_value = post_parameters["min_gas_value"]# flash('min gas value is required!'.upper(), "alert")
-        if not is_int(min_gas_value):
-            is_ok = False
-            flash('min gas value must be a number!'.upper(), "alert")
-        if not max_gas_value:
-            max_gas_value = post_parameters["max_gas_value"]# flash('max gas value is required!'.upper(), "alert")
-        if not is_int(max_gas_value):
-            is_ok = False
-            flash('max gas value  must be a number!'.upper(), "alert")
-        if is_int(min_gas_value) and is_int(max_gas_value) and ( not (int(min_gas_value) < int(max_gas_value))):
-            is_ok = False
-            flash('gas value range is incorrect!'.upper(), "alert")
+            flash('No device found'.upper(), "alert")
         
-        if is_ok:
-            post_parameters['MAC']= MAC
-            post_parameters['user_id']= device_id
-            post_parameters['sample_frequency']= sample_frequency
-            post_parameters['min_gas_value']= min_gas_value
-            post_parameters['max_gas_value']= max_gas_value
-            post_parameters['protocol']= get_protocol(protocol)
-
-            if current_protocol["current_protocol"] == "HTTP":
-                pass
-            if current_protocol["current_protocol"] == "MQTT":
-                # print("SONO QUI")
-                mqtt_handler.update_config(post_parameters)
+        else:
+            userid = request.form.get('DeviceId')
+            remote_ip = getIpByUserId(userid)
+            MAC = getMac(remote_ip) 
+            remote_configs = getConfig(remote_ip)
+            print("SONO QUI", remote_configs)
             
-            if current_protocol["current_protocol"] == "COAP":
-                pass
+            sample_frequency = request.form['sample_frequency']
+            min_gas_value = request.form['min_gas_value']
+            max_gas_value = request.form['max_gas_value']
+            protocol = request.form.get('comp_select')
 
+            # is_ok = True
 
-            print("NEW PROTOCOL: ", protocol)
-            print("OLD PROTOCOL: ", current_protocol)
-            current_protocol["current_protocol"] = protocol
+            if not MAC:
+                MAC = ""
+            if not sample_frequency:
+                sample_frequency=remote_configs["sample_frequency"]# flash('frequency is required!'.upper(), "alert")
+            if not is_int(sample_frequency):
+                is_ok = False
+                flash('frequency must be a number!'.upper(), "alert")
+            elif not int(sample_frequency) >= 0:
+                is_ok = False
+                flash('negative sample frequency!'.upper(), "alert")
+
+            if not min_gas_value:
+                min_gas_value = remote_configs["min_gas_value"]# flash('min gas value is required!'.upper(), "alert")
+            if not is_int(min_gas_value):
+                is_ok = False
+                flash('min gas value must be a number!'.upper(), "alert")
+            if not max_gas_value:
+                max_gas_value = remote_configs["max_gas_value"]# flash('max gas value is required!'.upper(), "alert")
+            if not is_int(max_gas_value):
+                is_ok = False
+                flash('max gas value  must be a number!'.upper(), "alert")
+            if is_int(min_gas_value) and is_int(max_gas_value) and ( not (int(min_gas_value) < int(max_gas_value))):
+                is_ok = False
+                flash('gas value range is incorrect!'.upper(), "alert")
+            
+            if is_ok:
+                remote_configs['MAC']= MAC
+                remote_configs['user_id']= userid
+                remote_configs['sample_frequency']= sample_frequency
+                remote_configs['min_gas_value']= min_gas_value
+                remote_configs['max_gas_value']= max_gas_value
+                remote_configs['protocol']= protocol# get_protocol(protocol)
+
+                print()
+                print()
+                print()
+                print("[Set-Parameters] CONFIG: ")
+                print(remote_configs)
+                print()
+                print()
+                print()
+                if current_protocol["current_protocol"] == "HTTP":
+                    pass
+                if current_protocol["current_protocol"] == "MQTT":
+                    # print("SONO QUI")
+                    mqtt_handler.update_config(remote_configs)
                 
-            flash('Parameters updated'.upper(), "success")
-            # return redirect(url_for('index'))
+                if current_protocol["current_protocol"] == "COAP":
+                    pass
 
-    protocols=[{'name':'HTTP'}, {'name':'COAP'}, {'name':'MQTT'}]
-    devices = getAllDevices()
 
+                print("NEW PROTOCOL: ", protocol)
+                print("OLD PROTOCOL: ", current_protocol)
+                current_protocol["current_protocol"] = protocol
+                    
+                flash('Parameters updated'.upper(), "success")
+                # return redirect(url_for('index'))
+    else:
+        remote_configs = getFirstConfig()
+    #print("REMOTe PROTOCOL:------>", remote_configs)
+    # protocols=[{'name':'HTTP'}, {'name':'COAP'}, {'name':'MQTT'}]
+
+    protocols = ['HTTP', 'COAP', 'MQTT']
     data = {
-        "protocols": protocols,
-        "devices": devices
-    }
+            "protocols": protocols,
+            "devices": [],
+            "config": {},
+            "total_configs": {}
+        }
+
+    if is_ok:
+        
+        print("[SET-PARAM] remote config", remote_configs)
+        protocols = sort_protocol(remote_configs, protocols)
+        
+        devices = getAllDevices()
+        # devices.append("Mucciacia")
+
+        devices_config = getConfigByUserId()
+        # devices_config["Mucciacia"] = {
+        #         'MAC':"Giovanni",
+        #         'user_id':"Mucciacia",
+        #         'sample_frequency': "75000",
+        #         'min_gas_value': "50",
+        #         'max_gas_value': "95000",
+        #         'protocol': "2"
+        #         }
+        #
+
+        data = {
+            "protocols": protocols,
+            "devices": devices,
+            "config": remote_configs,
+            "total_configs": devices_config
+        }
+
     return render_template('set_parameters.html', data=data)
 
 
@@ -301,7 +373,7 @@ def aggregate():
 
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
-    
+    print("FIRST POST PARAMETRS",post_parameters)
     ip=get_IP()
 
     mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)
@@ -311,11 +383,11 @@ if __name__ == '__main__':
 
     app.run(host=ip,port=5000)
 
-
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
     # bot_handler.join(0)
     # stat_handler.join(0)
+    
 
 
 
