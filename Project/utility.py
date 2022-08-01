@@ -16,7 +16,7 @@ coap_handler = None
 
 listvalues = []
 
-ip = "192.168.1.21"
+ip = "192.168.1.203"
 #{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
