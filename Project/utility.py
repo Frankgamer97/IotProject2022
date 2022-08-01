@@ -14,9 +14,11 @@ current_protocol = {"current_protocol": "HTTP"}
 mqtt_handler = None
 coap_handler = None
 
+influxdb_measurement="test-august-1"
+
 listvalues = []
 
-ip = "192.168.1.203"
+ip = "192.168.1.254"
 #{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",

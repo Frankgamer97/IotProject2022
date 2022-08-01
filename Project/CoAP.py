@@ -4,7 +4,7 @@ import aiocoap.resource as resource
 import aiocoap
 import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS, current_protocol
+from utility import SERVER_MEASUREMENTS, current_protocol, measurement
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
 from influxdb import influxdb_post
 from datetime import datetime
@@ -76,7 +76,9 @@ class CoapServer(resource.Resource):
             self.list_values.insert(0, json_data)
             self.aggr_handler.update_pandas()
             self.bot_handler.telegram_updates()
-            # influxdb_post(json_data)
+
+            # influxdb_post(pd.DataFrame(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"])) # IMPORTANTE!!!!
+
         except Exception as e:
             print("[COAP] PUT REQUEST ERROR")
             print()

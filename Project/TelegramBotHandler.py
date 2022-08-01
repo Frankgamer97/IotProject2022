@@ -27,8 +27,8 @@ class TelegramBotHandler():
                 data_column = list(data[column].values())
                 self.df[column] = data_column
 
-            # image_export(self.df,self.dir+"/table.png")
-            # self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb'))
+            # image_export(self.df,self.dir+"/table.png") ###########IMPORTANTE
+            # self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb')) ###########IMPORTANTE
             print("[TELEGRAM_BOT] POST")
 
 

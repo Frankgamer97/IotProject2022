@@ -148,48 +148,6 @@ class Forecast:
                 plt.legend(loc='upper left', fontsize=8)
                 plt.show()
 
-'''
-def meteo2pd(df):
-    df1 =df.copy()
-    df1 = pd.DataFrame({ "y": df})
-    df1.reset_index(inplace=True)
-    df1 = df1.rename(columns = {'time':'ds'})
-    return df1
-
-def pd2series(df,name_series="y"):
-    df1=df.copy()
-    df1= df1.set_index('ds')
-    return df1.squeeze().rename(name_series)
-
-
-
-def main_meteostat():
-        start, end = (2020, 12, 1), (2022, 7, 1)
-        meteor=Meteo()
-        meteor.get_interval_meteo(start,end)
-        #meteor.plot_data()
-
-        df =meteor.data.tavg.dropna()
-        #df.index = pd.to_datetime(df.index)
-        #df_shape =df.shape[0]
-        #df =df.squeeze()
-        df_pd = meteo2pd(df)
-        df = pd2series(df_pd,"meteostat"+"_Temperature")
-
-        #print(df)
-        #print(df.name)
-
-        forcast=Forecast(df)
-        #print("SEASON",forcast.D)
-        #print("STATION",forcast.d)
-        forcast.tuning()
-        forcast.fit(df.name)
-      
-        predictions=forcast.forecast(df.name,Forecast.seasonality)
-        forcast.plot_forecast()
-        return predictions
-'''
-
 
 def get_data_avg(df):
 
@@ -226,7 +184,7 @@ def get_predictions_list(series_list):
                         forcast.fit(df.name)
                       
                         predictions=forcast.forecast(df.name,df.shape[0],get_data_avg(df))
-                        #forcast.plot_forecast()
+                        # forcast.plot_forecast() ####IMPORTANTE
                         print("predictions\n")
                         print(predictions)
                         prediction_list.append(predictions)
@@ -261,17 +219,10 @@ def get_predicted_df(measurement):
                         
 
 def post_predictions(df_predicted,measurement):
-        #for i in range(df_predicted.shape[0]):
-        #        print(dict(df_predicted.iloc[i]))
-        #        #influxdb_post(dict(df_predicted.iloc[i]), type_data="forecasted_data", measurement=measurement)
-        #pass
         influxdb_post(df_predicted, measurement=measurement,tag_col=["Device","GPS"])
 
 
 if __name__=="__main__":
-        #meteostat_predicted=main_meteostat()
-
-        
         measurement="test-july27-3"
         df_predicted=get_predicted_df(measurement)
         #print(df_predicted)

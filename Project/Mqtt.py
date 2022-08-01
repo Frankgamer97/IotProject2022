@@ -5,7 +5,7 @@ import ast
 
 from utility import SERVER_MEASUREMENTS
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from utility import current_protocol
+from utility import current_protocol, measurement
 from influxdb import influxdb_post
 
 from DeviceStatHandler import DeviceStatHandler
@@ -94,7 +94,9 @@ class MqttHandler:
             MqttHandler.aggr_handler.update_pandas()
 
             MqttHandler.bot_handler.telegram_updates()
-            # influxdb_post(json_data)
+            
+            # influxdb_post(pd.DataFrame(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"])) # IMPORTANTE!!!!
+
         except Exception as e:
             print("[MQTT] DATA ERROR")
             print()

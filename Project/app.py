@@ -8,7 +8,7 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, measurement
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
 from utility import post_parameters
@@ -17,6 +17,7 @@ from utility import graph_meta, graph_intervall
 from influxdb import influxdb_post
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
+from DataStorage import StorageHandler
 
 from datetime import datetime
 
@@ -121,7 +122,8 @@ def updatesensor():
                        )
     aggr.update_pandas()
     bot_handler.telegram_updates()
-    # influxdb_post(json_data) # IMPORTANTE!!!!
+    # influxdb_post(pd.DataFrame(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"])) # IMPORTANTE!!!!
+
 
     return "ok"
 
@@ -347,6 +349,7 @@ def aggregate():
 
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
+    StorageHandler.create_tmp_directories()
     ip=get_IP()
 
     mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)

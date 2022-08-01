@@ -70,69 +70,8 @@ class Meteo:
 			self.measurement=measurement
 
 		lista=self.get_data_raw()
-		'''
-		table=pd.DataFrame(self.get_data_raw())
-		dte=pd.to_datetime(table["Time"])
-		print(dte)
-		print(table)
-		#print()
-		dta=pd.date_range("2020-12-1","2022-07-1",freq="D")
-		print(dta)
-		#print("hey")
-		#dte = pd.to_datetime(dte,dayfirst=True)
-		#print("hoy")
-		#print(dte)
-		table["Time"]=dta
-		print(table)
-		#table=table.set_index('Time')
-		'''
-		#for el in lista:
+
 		influxdb_post(pd.DataFrame(lista), measurement=self.measurement, tag_col=["GPS"])
-
-	'''
-	def post_meteo(self, start, end,measurement=None):
-		if measurement is not None:
-			self.measurement=measurement
-		self.get_interval_meteo(start,end)
-		self.post_data_raw()
-	'''
-
-
-'''
-	def get_meteo(self):
-	        return get_dataframe_from_influxdb(self.measurement,name="Meteostat_")
-
-	def get_pred_list(self,series_list):
-	        return get_predictions_list(series_list)
-
-
-	def get_predicted_meteostat(self):
-	        series_list=self.get_meteo()
-
-	        prediction_list=self.get_pred_list(series_list)
-
-
-	        df_gps={}
-	        for df in list_series:
-	                if "GPS" in df.name:
-	                      df_gps=df
-
-
-	        df_gps_predictions=pd.Series(list(df_gps), index=prediction_list[0].index).rename(df_gps.name+"_predicted")
-
-	        df_total=pd.concat([df_gps_predictions,prediction_list[0]],axis=1)
-	        print("--------------------------------------------------->")
-	        df_total.reset_index(inplace=True)
-	        df_total = df_total.rename(columns = {'index':'Time'})
-	        self.meteo_predicted=df_total
-	        return df_total
-
-	def post_predictions(self):
-	        for i in range(self.meteo_predicted.shape[0]):
-	                #print(dict(self.meteo_predicted.iloc[i]))
-	                influxdb_post(pd.DataFrame(dict(self.meteo_predicted.iloc[i])), type_data="forecasted_meteostat", measurement=self.measurement)
-	        
-'''
 
 
 class MeteoPredictor(Meteo):
@@ -178,10 +117,6 @@ class MeteoPredictor(Meteo):
 
 
 	def predict(self,n_periods=365):
-		#start, end = (2020, 12, 1), (2022, 7, 1)
-		#meteor=Meteo(measurement="testFinal2-meteostat")
-		#meteor.get_interval_meteo(start,end)
-		##meteor.plot_data()
 
 		df =self.data.tavg.dropna()
 
@@ -195,7 +130,7 @@ class MeteoPredictor(Meteo):
 		forcast.tuning()
 		forcast.fit(df.name)
 		self.predictions=forcast.forecast(df.name,n_periods)
-		# forcast.plot_forecast()
+		# forcast.plot_forecast() #####IMPORTANTE
 
 		self.predictions.index.name="ds"
 		# print(self.predictions)
@@ -211,56 +146,9 @@ class MeteoPredictor(Meteo):
 
 
 
-def main_meteostat_backup():
-	        start, end = (2020, 12, 1), (2022, 7, 1)
-	        meteor=Meteo(measurement="testFinal2-meteostat")
-	        meteor.get_interval_meteo(start,end)
-	        #meteor.plot_data()
-
-	        df =meteor.data.tavg.dropna()
-	        #df.index = pd.to_datetime(df.index)
-	        #df_shape =df.shape[0]
-	        #df =df.squeeze()
-	        df_pd = meteo2pd(df)
-	        df = pd2series(df_pd,"meteostat"+"_Temperature")
-
-	        print(df)
-	        print(type(df))
-
-	        forcast=Forecast(df)
-	        #print("SEASON",forcast.D)
-	        #print("STATION",forcast.d)
-	        forcast.tuning()
-	        forcast.fit(df.name)
-	      
-	        predictions=forcast.forecast(df.name,Forecast.seasonality)
-	        # forcast.plot_forecast()
-	        predictions.index.name="ds"
-	        return predictions
-
 
 if __name__ == '__main__':
 	
-	#meteor = Meteo()
-	#meteor.get_interval_meteo((2022, 7, 1),(2022, 7, 16))
-	# lista=meteor.get_data_raw()
-	#meteor.post_data_raw(measurement="test1-meteostat")
-
-#	meteor =Meteo(measurement="testFinal3-meteostat")
-	#meteor.get_interval_meteo((2020, 12, 1), (2022, 7, 1))
-	#table=pd.DataFrame(meteor.get_data_raw())
-	#table=table.set_index('Time')
-	#print(table)
-
-#	meteor.post_meteo( (2020, 12, 1), (2022, 7, 1))
-
-
-	#series_list=meteor.get_meteo()
-	#for df in series_list:
-#		print(df)
-	#meteor.get_predicted_meteostat()
-	#meteor.post_predictions()
-
 	meteor = MeteoPredictor(measurement="testFinal5-meteostat")
 	meteor.build_dataframe(start=(2020, 12, 1),end=(2022, 7, 1))
 	meteor.post_data_raw()
@@ -269,15 +157,4 @@ if __name__ == '__main__':
 
 
 	
-
-'''
-	predictions=main_meteostat()
-	predictions=predictions.to_frame()
-	predictions.reset_index(inplace=True)
-	predictions=predictions.rename(columns={"ds":"Time","meteostat_Temperature_predictions":"Temperature_predicted"})#meteostat_Temperature_predictions
-	#influxdb_post(predictions, type_data="meteostat_predicted", measurement=self.measurement,single_point=False,tag_columns=["GPS"],field_columns =["Temperature_predicted"])
-	
-	print(predictions)
-	print(type(predictions))
-'''
 
