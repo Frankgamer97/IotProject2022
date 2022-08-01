@@ -8,7 +8,7 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time, measurement
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, influxdb_measurement
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
 from utility import post_parameters

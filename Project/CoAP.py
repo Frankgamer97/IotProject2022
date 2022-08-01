@@ -4,7 +4,7 @@ import aiocoap.resource as resource
 import aiocoap
 import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS, current_protocol, measurement
+from utility import SERVER_MEASUREMENTS, current_protocol, influxdb_measurement
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
 from influxdb import influxdb_post
 from datetime import datetime

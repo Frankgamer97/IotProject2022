@@ -5,7 +5,7 @@ import ast
 
 from utility import SERVER_MEASUREMENTS
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from utility import current_protocol, measurement
+from utility import current_protocol, influxdb_measurement
 from influxdb import influxdb_post
 
 from DeviceStatHandler import DeviceStatHandler
