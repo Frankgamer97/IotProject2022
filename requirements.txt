@@ -13,3 +13,5 @@ meteostat
 requests
 ntplib
 pybase64
+statsmodel
+pmdarima

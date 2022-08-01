@@ -11,7 +11,7 @@ from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_pa
 from utility import get_time, is_int, get_protocol, get_IP, get_device_time, influxdb_measurement
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
-from utility import post_parameters
+from utility import post_parameters,jsonpost2pandas
 
 from utility import graph_meta, graph_intervall
 from influxdb import influxdb_post
@@ -22,11 +22,13 @@ from DataStorage import StorageHandler
 from datetime import datetime
 
 import pybase64
+import copy
 from io import BytesIO
 from matplotlib.figure import Figure
 # from DeviceStatHandler import DeviceStatHandler
 
 import os
+import pandas as pd
 
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
@@ -122,7 +124,8 @@ def updatesensor():
                        )
     aggr.update_pandas()
     bot_handler.telegram_updates()
-    # influxdb_post(pd.DataFrame(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"])) # IMPORTANTE!!!!
+
+    influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
 
 
     return "ok"

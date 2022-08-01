@@ -122,6 +122,14 @@ def get_protocol(prot):
     elif prot=="MQTT":
         return 2
 
+def json_post2pandas(json_data):
+    drop_columns=["MAC","C_Protocol","IP","Delay","PDR","DeviceId"]
+    json_post=copy.deepcopy(json_data)
+    json_post["GPS"]=[json_post["GPS"][0],json_post["GPS"][1]]
+    json_post=pd.DataFrame(json_post)
+    json_post.drop(columns=drop_columns, axis=1, errors='ignore')
+    return json_post
+
 '''
 def getMac(user_id):
     return user_mac_dict[user_id]
