@@ -11,4 +11,6 @@ influxdb-client
 jinja2
 meteostat
 requests
-
+statsmodels
+seaborn
+pmdarima
