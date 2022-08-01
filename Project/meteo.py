@@ -140,6 +140,8 @@ class MeteoPredictor(Meteo):
 		if measurement is not None:
 			self.measurement=measurement
 		lista=self.get_data_pred()
+		print("GPS")
+		print(lista[0]["GPS"])
 		influxdb_post(pd.DataFrame(lista), measurement=self.measurement,tag_col=["GPS"])
 
 

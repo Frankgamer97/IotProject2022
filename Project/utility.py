@@ -6,6 +6,7 @@ import ntplib
 import pytz
 import os
 import socket  
+import pandas as pd
 
 SERVER_MEASUREMENTS = 17
 
@@ -122,12 +123,15 @@ def get_protocol(prot):
     elif prot=="MQTT":
         return 2
 
-def json_post2pandas(json_data):
-    drop_columns=["MAC","C_Protocol","IP","Delay","PDR","DeviceId"]
-    json_post=copy.deepcopy(json_data)
-    json_post["GPS"]=[json_post["GPS"][0],json_post["GPS"][1]]
+def jsonpost2pandas(json_data):
+    drop_columns=["C_Protocol","IP","Delay","PDR","DeviceId"]
+    json_post=deepcopy(json_data)
+
+    for key in json_post.keys():
+        json_post[key]=[json_post[key]]
+
     json_post=pd.DataFrame(json_post)
-    json_post.drop(columns=drop_columns, axis=1, errors='ignore')
+    json_post=json_post.drop(columns=drop_columns, axis=1, errors='ignore').rename(columns = {'MAC':'Device'})
     return json_post
 
 '''

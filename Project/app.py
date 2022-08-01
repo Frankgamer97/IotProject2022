@@ -22,13 +22,11 @@ from DataStorage import StorageHandler
 from datetime import datetime
 
 import pybase64
-import copy
 from io import BytesIO
 from matplotlib.figure import Figure
 # from DeviceStatHandler import DeviceStatHandler
 
 import os
-import pandas as pd
 
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
