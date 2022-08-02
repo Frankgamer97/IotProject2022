@@ -100,7 +100,7 @@ def get_time():
     #utc_dt = datetime.now(timezone.utc) # UTC time
     #dt = utc_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
-    tz = pytz.timezone('Europe/Rome')
+    tz = pytz.timezone('UTC')
     return datetime.now(tz)
 
 def get_ntp_time():
@@ -154,6 +154,9 @@ def jsonpost2pandas(json_data):
     json_post=json_post.drop(columns=drop_columns, axis=1, errors='ignore').rename(columns = {'MAC':'Device'})
     
     json_post = json_post[["Time","Device","GPS","RSSI","Gas","AQI","Temperature","Humidity"]]
+
+    # json_post["Time"] = json_post["Time"].apply(lambda x: x)
+
     return json_post
 
 '''

@@ -41,7 +41,7 @@ countupdates = 0
 maxupdate = 5
 df_post = pd.DataFrame()
 
-measurement="test-july27-19"
+measurement="test-july27-20"
 arima_handler=ForecastHandler(measurement)
 
 #app = Flask(__name__, template_folder='templates')
