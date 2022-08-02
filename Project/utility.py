@@ -9,39 +9,7 @@ import socket
 import pandas as pd
 
 import threading
-import Queue
-
-def worker(in_q, out_q):
-    """ threadsafe worker """
-    abort = False
-    while not abort:
-        try:
-            # make sure we don't wait forever
-            task = in_q.get(True, .5)
-        except Queue.Empty:
-            abort = True
-        else:
-            # process task
-            response = task
-            # return result 
-            out_q.put(response)
-            in_q.task_done()
-
-
-def waiter(func1):
-
-    # one queue to pass tasks, one to get results
-    task_q = Queue.Queue()
-    result_q = Queue.Queue()
-    # start threads
-    t = threading.Thread(target=worker, args=(task_q, result_q))
-    t.start()
-    # submit some work
-    task_q.put(func1)
-    # wait for results
-    task_q.join()  
-    res=result_q.get()
-
+# import Queue
 
 
 
@@ -62,11 +30,16 @@ mqtt_handler = None
 coap_handler = None
 
 influxdb_measurement="test-august-1"
-influxdb_update_frequency = 5
+influxdb_forecast_sample = 5
+influxdb_past_sample = 5
+
+influxdb_countupdates = 0
+influxdb_maxupdate = influxdb_forecast_sample
+influxdb_df_post = pd.DataFrame()
 
 listvalues = []
 
-ip = "192.168.1.254"
+ip = "192.168.1.203"
 #{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
@@ -324,3 +297,26 @@ def updateConfigProtocol(ip, protocol):
     assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
     assert ip in ip_config_dict.keys()
     ip_config_dict[ip]["protocol"] = protocol
+
+
+def mecojoni(json_data, measurement=influxdb_measurement):
+
+    global countupdates
+    global maxupdate
+    global df_post
+    
+    json_post = jsonpost2pandas(json_data)
+    if countupdates >= maxupdate:
+        countupdates = 0
+
+        try:
+            influxdb_post(df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
+            df_post = pd.DataFrame()
+            print("mhhhhfine")
+        except:
+            print("Too few values to predict")
+            pass
+    else:
+        countupdates += 1
+        df_post = df_post.append(json_post)
+    

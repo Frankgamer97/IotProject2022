@@ -7,8 +7,9 @@ from flask_bootstrap import Bootstrap
 from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
-from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler, coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time, influxdb_measurement
+from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler 
+from utility import coap_handler, influxdb_measurement
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
 from utility import post_parameters,jsonpost2pandas
@@ -18,6 +19,7 @@ from influxdb import influxdb_post
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
 from DataStorage import StorageHandler
+from arima_model import ForecastHandler
 
 from datetime import datetime
 
@@ -27,11 +29,16 @@ from matplotlib.figure import Figure
 # from DeviceStatHandler import DeviceStatHandler
 
 import os
+import pandas as pd
 
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
 http_startMeasurements = None
 
+
+countupdates = 0
+maxupdate = 5
+df_post = pd.DataFrame()
 
 measurement="test-july27-3"
 arima_handler=ForecastHandler(measurement)
@@ -126,9 +133,28 @@ def updatesensor():
     aggr.update_pandas()
     bot_handler.telegram_updates()
 
-    influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
-    print("mhhhhfine")
-    arima_handler.arima_updates()
+    measurement = "test-july27-5"
+    
+    global countupdates
+    global maxupdate
+    global df_post
+    
+    json_post = jsonpost2pandas(json_data)
+    if countupdates >= maxupdate:
+        countupdates = 0
+
+        try:
+            influxdb_post(df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
+            df_post = pd.DataFrame()
+            print("mhhhhfine")
+        except:
+            print("Too few values to predict")
+            pass
+    else:
+        countupdates += 1
+        df_post = df_post.append(json_post)
+    
+    # arima_handler.arima_updates()
 
 
     return "ok"

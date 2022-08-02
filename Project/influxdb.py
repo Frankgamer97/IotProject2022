@@ -23,9 +23,9 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
     print(json_data)
+    print(measurement)
 
-
-    write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
+    # write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
     ###### IMPORTANTE
     print("mhhhhinizio")
     return "ok"
@@ -87,7 +87,15 @@ def dataframe2series_list(df,name):
 
 
 def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table","RSSI"],masking_device=None,name="my_data_"):
-    table=influxdb_query(measurement).drop(columns=drop_columns, axis=1, errors='ignore')
+    table=influxdb_query(measurement)
+    table = table.dropna()
+    
+    print("=============>")
+    print(table)
+    print("=============>")
+    
+
+    table = table.drop(columns=drop_columns, axis=1, errors='ignore')
     table=table.rename(columns={"_time":"ds"})
     table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
     #print(table)
@@ -98,7 +106,7 @@ def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table
         #table_NonAccl = table[~mask]
 
     df= table.set_index('ds')#.drop(columns=["Device"], axis=1, errors='ignore')
-    df=df.dropna()
+    # df=df.dropna()
     #print(df)
 
 

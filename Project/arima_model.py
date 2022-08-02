@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from pmdarima.preprocessing import FourierFeaturizer
 import pickle
 from influxdb import get_dataframe_from_influxdb, influxdb_post
-from utility import influxdb_update_frequency, influxdb_measurement
+from utility import influxdb_forecast_sample, influxdb_measurement, influxdb_past_sample
 
 from DataStorage import StorageHandler
 
@@ -153,9 +153,9 @@ class Forecast:
 
 class ForecastHandler():
 
-        def __init__(self,measurement=influxdb_measurement,n_periods=influxdb_update_frequency,maxupdate=influxdb_update_frequency):
+        def __init__(self,measurement=influxdb_measurement,n_periods=influxdb_forecast_sample,maxupdate=influxdb_forecast_sample):
                 self.countupdate= 0
-                self.maxupdate= maxupdate
+                self.maxupdate= maxupdate # quanti ne voglio predire
                 self.prediction_list=[]
                 self.df_predicted = None
                 self.measurement=measurement
@@ -165,8 +165,8 @@ class ForecastHandler():
 
 
         @staticmethod
-        def get_data_avg(df,p):
-
+        def get_data_avg(df,p = influxdb_past_sample):
+                
                 index_range=df.index.strftime("%Y-%m-%d %H:%M:%S") 
                 didx=pd.DatetimeIndex(index_range)
                 n_period=p     # didx.shape[0]
@@ -202,7 +202,7 @@ class ForecastHandler():
                                 forcast.tuning()
                                 forcast.fit(df.name)
                               
-                                predictions=forcast.forecast(df.name,self.n_periods,ForecastHandler.get_data_avg(df,forcast.mparima_dict[df.name]["order"][0]))
+                                predictions=forcast.forecast(df.name,self.n_periods,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
                                 # forcast.plot_forecast() ####IMPORTANTE
                                 print("predictions\n")
                                 print(predictions)
@@ -261,9 +261,9 @@ class ForecastHandler():
 
 
 if __name__=="__main__":
-        measurement="test-july27-3"
+        measurement="test-july27-5"
         handler=ForecastHandler(measurement)
-        handler.arima_updates()
+        handler.send_updates()
 
 
         
