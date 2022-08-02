@@ -123,6 +123,27 @@ class Forecast:
                         #print(len(exog))
                         start=int(end-Forecast.seasonality)
                         fc = self.fitted_model.predict(n_periods=n_periods,exogenous=exog[start:n_periods])
+
+                        print("[Forecast]DF=========>")
+                        print(self.df)
+                        print("[Forecast]DF=========>")
+                        
+                        print("[Forecast]DFOriginal=========>")
+                        print(self.df_original)
+                        print("[Forecast]DFOriginal=========>")
+
+                        print("[Forecast]DFindex=========>")
+                        print(self.df.index)
+                        print("last")
+                        print(self.df.index[-1])
+                        print("[Forecast]DFindex=========>")
+
+                        print("[Forecast]DFOriginalindex=========>")
+                        print(self.df_original.index)
+                        print("last")
+                        print(self.df_original.index[-1])
+                        print("[Forecast]DFOriginalindex=========>")
+
                         last_rev=self.df.index[-1]
                         #date_range= pd.date_range(last_rev+pd.DateOffset(1),last_rev+pd.DateOffset(n_periods), freq=freq)
                         date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
@@ -198,10 +219,12 @@ class ForecastHandler():
                         if "Device" in df.name or "GPS" in df.name:
                                 pass # print(f"{df.name} is not to predict")
                         else:
-                                # print()
-                                # print(df)
-                                # print()
-                                df=df
+                                
+                                print("=============GET PREDICTION LIST===========>")
+                                print(df)
+                                print("=============GET PREDICTION LIST===========>")
+
+                                # df=df
                                 forcast=Forecast(df,seasonality=False)
                                 #print("SEASON",forcast.D)
                                 #print("STATION",forcast.d)
@@ -219,9 +242,9 @@ class ForecastHandler():
         def get_predicted_df(self):
                 series_list=get_dataframe_from_influxdb(self.measurement)
 
-                print("=============ARA ARA===========>")
-                print(series_list)
-                print("=============ARA ARA===========>")
+                #print("=============ARA ARA===========>")
+                #print(series_list)
+                #print("=============ARA ARA===========>")
                 self.get_predictions_list(series_list)
                                 
                 df_device={}
