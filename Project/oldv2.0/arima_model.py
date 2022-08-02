@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 from pmdarima.preprocessing import FourierFeaturizer
 import pickle
 from influxdb import get_dataframe_from_influxdb, influxdb_post
-from utility import influxdb_update_frequency, influxdb_measurement
 
 from DataStorage import StorageHandler
 
@@ -150,137 +149,6 @@ class Forecast:
                 plt.show()
 
 
-
-class ForecastHandler():
-
-        def __init__(self,measurement=influxdb_measurement,n_periods=influxdb_update_frequency,maxupdate=influxdb_update_frequency):
-                self.countupdate= 0
-                self.maxupdate= maxupdate
-                self.prediction_list=[]
-                self.df_predicted = None
-                self.measurement=measurement
-                self.n_periods=n_periods
-
-
-
-
-        @staticmethod
-        def get_data_avg(df,p):
-
-                index_range=df.index.strftime("%Y-%m-%d %H:%M:%S") 
-                didx=pd.DatetimeIndex(index_range)
-                n_period=p     # didx.shape[0]
-                if n_period!=0:
-                        diff=0
-                        for i in range(n_period):
-                                if i<n_period:
-                                        diff=diff+(didx[-(i+1)]-didx[-(i+2)]).total_seconds()
-                        freq=abs(int(diff/n_period))
-                        return str(freq)+"s"
-
-                diff=(didx[-1]-didx[-2]).total_seconds()
-                freq=abs(int(diff/(n_period+1)))
-                return str(freq)+"s"
-                
-          
-        def get_predictions_list(self, series_list):
-                # series_list=get_dataframe_from_influxdb(self.measurement)
-
-
-                for df in series_list:
-
-                        if "Device" in df.name or "GPS" in df.name:
-                                print(f"{df.name} is not to predict")
-                        else:
-                                print()
-                                print(df)
-                                print()
-                                df=df
-                                forcast=Forecast(df,seasonality=False)
-                                #print("SEASON",forcast.D)
-                                #print("STATION",forcast.d)
-                                forcast.tuning()
-                                forcast.fit(df.name)
-                              
-                                predictions=forcast.forecast(df.name,self.n_periods,ForecastHandler.get_data_avg(df,forcast.mparima_dict[df.name]["order"][0]))
-                                # forcast.plot_forecast() ####IMPORTANTE
-                                print("predictions\n")
-                                print(predictions)
-                                self.prediction_list.append(predictions)
-                return self.prediction_list
-
-
-        def get_predicted_df(self):
-                series_list=get_dataframe_from_influxdb(measurement)
-                self.get_predictions_list(series_list)
-                                
-                df_device={}
-                for df in series_list:
-                        if "Device" in df.name:
-                              df_device=df
-
-                df_gps={}
-                for df in series_list:
-                        if "GPS" in df.name:
-                              df_gps=df
-
-                df_device_predictions=pd.Series(list(df_device[0:self.n_periods]), index=self.prediction_list[0].index).rename(df_device.name)
-    
-                df_gps_predictions=pd.Series(list(df_gps[0:self.n_periods]), index=self.prediction_list[0].index).rename(df_gps.name)
- 
-
-                self.df_predicted=pd.concat([df_device_predictions,df_gps_predictions,self.prediction_list[0],self.prediction_list[1],self.prediction_list[2]],axis=1)
-                print("--------------------------------------------------->")
-                self.df_predicted.reset_index(inplace=True)
-                self.df_predicted = self.df_predicted.rename(columns = {'index':'Time'})
-                return self.df_predicted
-
-                                
-        
-        def post_predictions(self):
-                influxdb_post(self.df_predicted, measurement=self.measurement,tag_col=["Device","GPS"])
-
-
-
-
-        def send_updates(self):
-                self.get_predicted_df()
-                self.post_predictions()
-
-        def arima_updates(self):
-                if self.countupdate>=self.maxupdate:
-                        self.countupdate=0
-                        try:
-                                self.send_updates()
-                        except:
-                                print("Too few values to predict")
-                                pass
-                else:
-                        self.countupdate+=1
-
-
-
-if __name__=="__main__":
-        measurement="test-july27-3"
-        handler=ForecastHandler(measurement)
-        handler.arima_updates()
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
 def get_data_avg(df):
 
         index_range=df.index.strftime("%Y-%m-%d %H:%M:%S") 
@@ -353,15 +221,12 @@ def get_predicted_df(measurement):
 def post_predictions(df_predicted,measurement):
         influxdb_post(df_predicted, measurement=measurement,tag_col=["Device","GPS"])
 
-'''
 
-
-'''
 if __name__=="__main__":
         measurement="test-july27-3"
         df_predicted=get_predicted_df(measurement)
         #print(df_predicted)
         post_predictions(df_predicted,measurement)
         
-'''
+
 

@@ -8,52 +8,6 @@ import os
 import socket  
 import pandas as pd
 
-import threading
-import Queue
-
-def worker(in_q, out_q):
-    """ threadsafe worker """
-    abort = False
-    while not abort:
-        try:
-            # make sure we don't wait forever
-            task = in_q.get(True, .5)
-        except Queue.Empty:
-            abort = True
-        else:
-            # process task
-            response = task
-            # return result 
-            out_q.put(response)
-            in_q.task_done()
-
-
-def waiter(func1):
-
-    # one queue to pass tasks, one to get results
-    task_q = Queue.Queue()
-    result_q = Queue.Queue()
-    # start threads
-    t = threading.Thread(target=worker, args=(task_q, result_q))
-    t.start()
-    # submit some work
-    task_q.put(func1)
-    # wait for results
-    task_q.join()  
-    res=result_q.get()
-
-
-
-
-
-
-
-
-
-
-
-
-
 SERVER_MEASUREMENTS = 17
 
 current_protocol = {"current_protocol": "HTTP"}
@@ -62,7 +16,6 @@ mqtt_handler = None
 coap_handler = None
 
 influxdb_measurement="test-august-1"
-influxdb_update_frequency = 5
 
 listvalues = []
 

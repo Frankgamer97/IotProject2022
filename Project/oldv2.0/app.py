@@ -33,9 +33,6 @@ bot_handler = TelegramBotHandler(aggr)
 http_startMeasurements = None
 
 
-measurement="test-july27-3"
-arima_handler=ForecastHandler(measurement)
-
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -127,8 +124,6 @@ def updatesensor():
     bot_handler.telegram_updates()
 
     influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
-    print("mhhhhfine")
-    arima_handler.arima_updates()
 
 
     return "ok"
