@@ -15,7 +15,7 @@ from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, upd
 from utility import post_parameters,jsonpost2pandas
 
 from utility import graph_meta, graph_intervall
-from influxdb import influxdb_post
+from influxdb import send_influxdb
 from aggregation import Aggregation
 from TelegramBotHandler import TelegramBotHandler
 from DataStorage import StorageHandler
@@ -35,12 +35,13 @@ aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
 http_startMeasurements = None
 
+debug_count = 0
 
 countupdates = 0
 maxupdate = 5
 df_post = pd.DataFrame()
 
-measurement="test-july27-3"
+measurement="test-july27-19"
 arima_handler=ForecastHandler(measurement)
 
 #app = Flask(__name__, template_folder='templates')
@@ -133,29 +134,14 @@ def updatesensor():
     aggr.update_pandas()
     bot_handler.telegram_updates()
 
-    measurement = "test-july27-5"
-    
-    global countupdates
-    global maxupdate
-    global df_post
-    
-    json_post = jsonpost2pandas(json_data)
-    if countupdates >= maxupdate:
-        countupdates = 0
+    global measurement
+    # measurement = "test-july27-11"
+    send_influxdb(json_data, measurement = measurement)
+    arima_handler.arima_updates()
 
-        try:
-            influxdb_post(df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
-            df_post = pd.DataFrame()
-            print("mhhhhfine")
-        except:
-            print("Too few values to predict")
-            pass
-    else:
-        countupdates += 1
-        df_post = df_post.append(json_post)
-    
-    # arima_handler.arima_updates()
-
+    # global debug_count
+    # debug_count += 1
+    # print(f"[POST] ======================> {debug_count}")
 
     return "ok"
 
@@ -168,7 +154,6 @@ def getsensor():
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
 
     config = getConfig(request.remote_addr)
-
     return jsonify(
         config# post_parameters
         #sample_frequency=post_parameters["sample_frequency"],

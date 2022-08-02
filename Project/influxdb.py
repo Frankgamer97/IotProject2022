@@ -1,8 +1,13 @@
-from utility import influx_parameters 
+from utility import influx_parameters, influxdb_countupdates, influxdb_maxupdate, influxdb_df_post
+from utility import influxdb_measurement, jsonpost2pandas
 #from influxdb import DataFrameClient
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client.client.util import date_utils
+from influxdb_client.client.util.date_utils import DateHelper
+
 from DataStorage import StorageHandler
+from dateutil.tz import tzlocal
 import pandas as pd
 
 
@@ -17,17 +22,16 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
     if measurement=="":
         measurement= influx_parameters["measurement"]
 
-
+    # date_utils.date_helper = DateHelper(timezone=tzlocal())
     client = InfluxDBClient(url=server, token=token, org=user)
  
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
     print(json_data)
-    print(measurement)
+    # print(measurement)
 
-    # write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
+    write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
     ###### IMPORTANTE
-    print("mhhhhinizio")
     return "ok"
 
 def influxdb_query(measurement=""):
@@ -38,7 +42,7 @@ def influxdb_query(measurement=""):
     if measurement=="":
         measurement= influx_parameters["measurement"]
 
-
+    # date_utils.date_helper = DateHelper(timezone=tzlocal())
     client = InfluxDBClient(url=server, token=token, org=user)
     query_api = client.query_api()
 
@@ -75,9 +79,9 @@ def influxdb_query(measurement=""):
     return tables
 
 
-def dataframe2series_list(df,name):
-
+def dataframe2series_list(df):
     list_series=[]
+
     for col in df:
         list_series.append(df[col].squeeze().rename(col))
 
@@ -86,18 +90,21 @@ def dataframe2series_list(df,name):
 
 
 
-def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table","RSSI"],masking_device=None,name="my_data_"):
+def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table","RSSI"], masking_device=None):
     table=influxdb_query(measurement)
     table = table.dropna()
     
-    print("=============>")
-    print(table)
-    print("=============>")
+    # print("=============>")
+    # print(table)
+    # print("=============>")
+    # print(measurement)
+    # print("=============>")
+    
     
 
     table = table.drop(columns=drop_columns, axis=1, errors='ignore')
     table=table.rename(columns={"_time":"ds"})
-    table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
+    # table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
     #print(table)
     #print(table_notime)
     if masking_device!= None:
@@ -110,8 +117,29 @@ def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table
     #print(df)
 
 
-    return dataframe2series_list(df,name)#list_series
+    return dataframe2series_list(df)#list_series
 
+def send_influxdb(json_data, measurement=influxdb_measurement):
+
+    global influxdb_countupdates
+    global influxdb_maxupdate
+    global influxdb_df_post
+    
+    json_post = jsonpost2pandas(json_data)
+    if influxdb_countupdates == influxdb_maxupdate - 1:
+        influxdb_countupdates = 0
+
+        try:
+            influxdb_df_post = influxdb_df_post.append(json_post)
+            influxdb_df_post.reset_index(inplace=True, drop=True)
+            influxdb_post(influxdb_df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
+            influxdb_df_post = pd.DataFrame()
+        except:
+            print("Too few values to predict")
+            pass
+    else:
+        influxdb_countupdates += 1
+        influxdb_df_post = influxdb_df_post.append(json_post)
 
 if __name__=="__main__":
 

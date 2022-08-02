@@ -1,3 +1,4 @@
+from time import sleep
 from statsmodels.tsa.arima_model import ARIMA
 import pmdarima as pm
 import pandas as pd
@@ -47,7 +48,7 @@ class Forecast:
                                 print(f"[ARIMA] No {model} found")
                                 self.mparima_dict[model]={}
                         else:
-                                print(f"[ARIMA] {model} exists")
+                                print(f"[ARIMA] {model} already exists")
 
 
                         if self.seasonality==True:
@@ -61,7 +62,7 @@ class Forecast:
 
                         if self.mparima_dict[model]=={}:
 
-                                print(f"[ARIMA] Creating {model}")
+                                print(f"[ARIMA] Creating model: {model}")
                                 if self.seasonality==True:
                                         arima_model = pm.auto_arima(y=self.df, exogenous=self.exog,start_p=0,d=self.get_stationarity(),start_q=0,
                                                           max_p=2,max_q=2, start_P=0,
@@ -103,12 +104,12 @@ class Forecast:
 
                 if self.seasonality==True:
                         self.fitted_model=pm.arima.ARIMA(order=self.mparima_dict[model_name]["order"], seasonal_order=self.mparima_dict[model_name]["seasonal_order"], start_params=None,
-                         method='lbfgs', maxiter=50, suppress_warnings=False, out_of_sample_size=0, 
+                         method='lbfgs', maxiter=50, suppress_warnings=True, out_of_sample_size=0, 
                          scoring='mse', scoring_args=None, trend=None, with_intercept=True)
                         self.fitted_model.fit(self.mparima_dict[model_name]["y_prime"], self.mparima_dict[model_name]["exog"])
                 else:
                         self.fitted_model=pm.arima.ARIMA(order=self.mparima_dict[model_name]["order"], seasonal_order=self.mparima_dict[model_name]["seasonal_order"], start_params=None,
-                         method='lbfgs', maxiter=50, suppress_warnings=False, out_of_sample_size=0, 
+                         method='lbfgs', maxiter=50, suppress_warnings=True, out_of_sample_size=0, 
                          scoring='mse', scoring_args=None, trend=None, with_intercept=True)
                         self.fitted_model.fit(self.mparima_dict[model_name]["y_prime"])  
                 
@@ -131,6 +132,11 @@ class Forecast:
                 else:
                         fc = self.fitted_model.predict(n_periods=n_periods)
                         last_rev=self.df.index[-1]
+
+                        # print("=============>")
+                        # print(last_rev)
+                        # print("=============>")
+
                         date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
                         date_forcasted= pd.Series(date_range)
                         #fc_series = pd.Series(fc)
@@ -155,11 +161,11 @@ class ForecastHandler():
 
         def __init__(self,measurement=influxdb_measurement,n_periods=influxdb_forecast_sample,maxupdate=influxdb_forecast_sample):
                 self.countupdate= 0
-                self.maxupdate= maxupdate # quanti ne voglio predire
+                self.maxupdate= maxupdate # quanti ne aspetto prima di postare
                 self.prediction_list=[]
                 self.df_predicted = None
                 self.measurement=measurement
-                self.n_periods=n_periods
+                self.n_predictions=n_periods # quanti ne predico
 
 
 
@@ -190,11 +196,11 @@ class ForecastHandler():
                 for df in series_list:
 
                         if "Device" in df.name or "GPS" in df.name:
-                                print(f"{df.name} is not to predict")
+                                pass # print(f"{df.name} is not to predict")
                         else:
-                                print()
-                                print(df)
-                                print()
+                                # print()
+                                # print(df)
+                                # print()
                                 df=df
                                 forcast=Forecast(df,seasonality=False)
                                 #print("SEASON",forcast.D)
@@ -202,16 +208,20 @@ class ForecastHandler():
                                 forcast.tuning()
                                 forcast.fit(df.name)
                               
-                                predictions=forcast.forecast(df.name,self.n_periods,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
+                                predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
                                 # forcast.plot_forecast() ####IMPORTANTE
-                                print("predictions\n")
-                                print(predictions)
+                                # print("predictions\n")
+                                # print(predictions)
                                 self.prediction_list.append(predictions)
                 return self.prediction_list
 
 
         def get_predicted_df(self):
-                series_list=get_dataframe_from_influxdb(measurement)
+                series_list=get_dataframe_from_influxdb(self.measurement)
+
+                print("=============ARA ARA===========>")
+                print(series_list)
+                print("=============ARA ARA===========>")
                 self.get_predictions_list(series_list)
                                 
                 df_device={}
@@ -224,20 +234,25 @@ class ForecastHandler():
                         if "GPS" in df.name:
                               df_gps=df
 
-                df_device_predictions=pd.Series(list(df_device[0:self.n_periods]), index=self.prediction_list[0].index).rename(df_device.name)
+                df_device_predictions=pd.Series(list(df_device[0:self.n_predictions]), index=self.prediction_list[0].index).rename(df_device.name)
     
-                df_gps_predictions=pd.Series(list(df_gps[0:self.n_periods]), index=self.prediction_list[0].index).rename(df_gps.name)
+                df_gps_predictions=pd.Series(list(df_gps[0:self.n_predictions]), index=self.prediction_list[0].index).rename(df_gps.name)
  
 
                 self.df_predicted=pd.concat([df_device_predictions,df_gps_predictions,self.prediction_list[0],self.prediction_list[1],self.prediction_list[2]],axis=1)
-                print("--------------------------------------------------->")
+                # print("--------------------------------------------------->")
                 self.df_predicted.reset_index(inplace=True)
                 self.df_predicted = self.df_predicted.rename(columns = {'index':'Time'})
+
+                self.df_predicted["Gas_predicted"] = self.df_predicted["Gas_predicted"].apply(lambda x: int(x))
+                self.df_predicted["Humidity_predicted"] = self.df_predicted["Humidity_predicted"].apply(lambda x: round(x,1))
+                self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
                 return self.df_predicted
 
                                 
         
         def post_predictions(self):
+                # sleep(influxdb_forecast_sample * 1.5)
                 influxdb_post(self.df_predicted, measurement=self.measurement,tag_col=["Device","GPS"])
 
 
@@ -248,120 +263,18 @@ class ForecastHandler():
                 self.post_predictions()
 
         def arima_updates(self):
-                if self.countupdate>=self.maxupdate:
-                        self.countupdate=0
+                if self.countupdate == self.maxupdate -1:
+                        self.countupdate = 0
                         try:
                                 self.send_updates()
                         except:
-                                print("Too few values to predict")
-                                pass
+                                print("Too few observations to estimate starting parameters")
                 else:
-                        self.countupdate+=1
+                        self.countupdate += 1
 
 
 
 if __name__=="__main__":
-        measurement="test-july27-5"
+        measurement="test-july27-15"
         handler=ForecastHandler(measurement)
         handler.send_updates()
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-def get_data_avg(df):
-
-        index_range=df.index.strftime("%Y-%m-%d %H:%M:%S") 
-        didx=pd.DatetimeIndex(index_range)
-        n_period=didx.shape[0]
-        diff=0
-        for i in range(n_period):
-                if i<n_period-1:
-                        diff=diff+(didx[i+1]-didx[i]).total_seconds()
-
-        freq=int(diff/n_period)
-        return str(freq)+"s"
-        
-  
-def get_predictions_list(series_list):
-        series_list=get_dataframe_from_influxdb(measurement)
-
-        prediction_list=[]
-
-        for df in series_list:
-
-                if "Device" in df.name or "GPS" in df.name:
-                        print(f"{df.name} is not to predict")
-                else:
-                        print()
-                        print(df)
-                        print()
-                        df=df
-                        forcast=Forecast(df,seasonality=False)
-                        #print("SEASON",forcast.D)
-                        #print("STATION",forcast.d)
-                        forcast.tuning()
-                        forcast.fit(df.name)
-                      
-                        predictions=forcast.forecast(df.name,df.shape[0],get_data_avg(df))
-                        # forcast.plot_forecast() ####IMPORTANTE
-                        print("predictions\n")
-                        print(predictions)
-                        prediction_list.append(predictions)
-        return prediction_list
-
-def get_predicted_df(measurement):
-        series_list=get_dataframe_from_influxdb(measurement)
-
-        prediction_list=get_predictions_list(series_list)
-                        
-
-        df_device={}
-        for df in series_list:
-                if "Device" in df.name:
-                      df_device=df
-
-        df_gps={}
-        for df in series_list:
-                if "GPS" in df.name:
-                      df_gps=df
-
-
-        df_device_predictions=pd.Series(list(df_device), index=prediction_list[0].index).rename(df_device.name)
-        df_gps_predictions=pd.Series(list(df_gps), index=prediction_list[0].index).rename(df_gps.name)
-
-        df_total=pd.concat([df_device_predictions,df_gps_predictions,prediction_list[0],prediction_list[1],prediction_list[2]],axis=1)
-        print("--------------------------------------------------->")
-        df_total.reset_index(inplace=True)
-        df_total = df_total.rename(columns = {'index':'Time'})
-        #print(df_total)
-        return(df_total)
-                        
-
-def post_predictions(df_predicted,measurement):
-        influxdb_post(df_predicted, measurement=measurement,tag_col=["Device","GPS"])
-
-'''
-
-
-'''
-if __name__=="__main__":
-        measurement="test-july27-3"
-        df_predicted=get_predicted_df(measurement)
-        #print(df_predicted)
-        post_predictions(df_predicted,measurement)
-        
-'''
-

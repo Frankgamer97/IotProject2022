@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from meteostat import Point, Daily
 from utility import listvalues
 import pandas as pd
-from influxdb import influxdb_post, get_dataframe_from_influxdb
-from arima_model import Forecast, get_predictions_list
+from influxdb import influxdb_post # , get_dataframe_from_influxdb
+from arima_model import Forecast
 
 
 			
@@ -75,22 +75,20 @@ class Meteo:
 
 
 class MeteoPredictor(Meteo):
-
-
 	@staticmethod
 	def meteo2pd(df):
-	    df1 =df.copy()
-	    df1 = pd.DataFrame({ "y": df})
-	    df1.reset_index(inplace=True)
-	    df1 = df1.rename(columns = {'time':'ds'})
-	    return df1
+		df1 =df.copy()
+		df1 = pd.DataFrame({ "y": df})
+		df1.reset_index(inplace=True)
+		df1 = df1.rename(columns = {'time':'ds'})
+		return df1
 
 	@staticmethod
 	def pd2series(df,name_series="y"):
-	    df1=df.copy()
-	    df1= df1.set_index('ds')
-	    df1.index.name="ds"
-	    return df1.squeeze().rename(name_series)
+		df1=df.copy()
+		df1= df1.set_index('ds')
+		df1.index.name="ds"
+		return df1.squeeze().rename(name_series)
 
 	@staticmethod
 	def series2pd(df):
@@ -142,16 +140,18 @@ class MeteoPredictor(Meteo):
 		lista=self.get_data_pred()
 		print("GPS")
 		print(lista[0]["GPS"])
-		influxdb_post(pd.DataFrame(lista), measurement=self.measurement,tag_col=["GPS"])
+		
+		post_df = pd.DataFrame(lista)
 
-
+		post_df["Temperature_predicted"] = post_df["Temperature_predicted"].apply(lambda x: round(x,1))
+		influxdb_post(post_df, measurement=self.measurement,tag_col=["GPS"])
 
 
 
 
 if __name__ == '__main__':
 	
-	meteor = MeteoPredictor(measurement="testFinal5-meteostat")
+	meteor = MeteoPredictor(measurement="testFinal6-meteostat")
 	meteor.build_dataframe(start=(2020, 12, 1),end=(2022, 7, 1))
 	meteor.post_data_raw()
 	meteor.predict()

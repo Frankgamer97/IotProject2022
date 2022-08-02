@@ -152,6 +152,8 @@ def jsonpost2pandas(json_data):
 
     json_post=pd.DataFrame(json_post)
     json_post=json_post.drop(columns=drop_columns, axis=1, errors='ignore').rename(columns = {'MAC':'Device'})
+    
+    json_post = json_post[["Time","Device","GPS","RSSI","Gas","AQI","Temperature","Humidity"]]
     return json_post
 
 '''
@@ -297,26 +299,4 @@ def updateConfigProtocol(ip, protocol):
     assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
     assert ip in ip_config_dict.keys()
     ip_config_dict[ip]["protocol"] = protocol
-
-
-def mecojoni(json_data, measurement=influxdb_measurement):
-
-    global countupdates
-    global maxupdate
-    global df_post
-    
-    json_post = jsonpost2pandas(json_data)
-    if countupdates >= maxupdate:
-        countupdates = 0
-
-        try:
-            influxdb_post(df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
-            df_post = pd.DataFrame()
-            print("mhhhhfine")
-        except:
-            print("Too few values to predict")
-            pass
-    else:
-        countupdates += 1
-        df_post = df_post.append(json_post)
     
