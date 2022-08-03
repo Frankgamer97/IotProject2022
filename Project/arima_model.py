@@ -1,3 +1,4 @@
+from copy import deepcopy
 from time import sleep
 from statsmodels.tsa.arima_model import ARIMA
 from matplotlib.figure import Figure
@@ -209,13 +210,58 @@ class Forecast:
                 plt.legend(loc='upper left', fontsize=8)
                 plt.show()
         
-        def get_image_result(self):
+        def get_image_result(self, series_list):
+
+                local_predictions = deepcopy(self.predictions)
+                df = pd.concat(series_list, axis=1)
+                df.reset_index(inplace=True)
+                df = df.rename(columns = {'ds':'Time'})
+
+                if self.df_original.name+"_predicted" in df.columns:
+
+                        df = df[["Time",self.df_original.name+"_predicted"]]
+                        df = df.set_index("Time")
+
+                        df = df.squeeze()
+                        # print("========MACHECAZZ1")
+                        # print(df)
+                        # print("========MACHECAZZ1-FINE")
+
+                        
+                        local_predictions.name = self.df_original.name+"_predicted"
+                        self.concatenated_prediction= pd.concat([df,local_predictions])
+                else:
+                        self.concatenated_prediction = local_predictions        
+
+                
+                print("========MACHECAZZ2")
+                print(self.concatenated_prediction)
+
+                self.concatenated_prediction = self.concatenated_prediction.apply(lambda sorata: round(sorata,1))
+                print("========MACHECAZZ2-FINE")
+                        
+                
+                print("========MACHECAZZ-ORIGINAL")
+                print(self.df_original)
+                print("========MACHECAZZ3-ORIGINAL-FINE")
+                        
+
                 fig = Figure(figsize=(12,5), dpi=100)
                 
                 ax = fig.subplots()
                                         
-                ax.plot(self.df_original, label='training',color="darkgreen")
-                ax.plot(self.predictions, label='forecast',color='red')
+                # ax.plot(self.df_original, label='training',color="darkgreen")
+                # ax.plot(self.concatenated_prediction, label='forecast',color='red')
+
+
+                self.df_original = self.df_original.rename(index="Time")
+                self.concatenated_prediction = self.concatenated_prediction.rename(index="Time")
+
+
+
+
+                self.df_original.plot(ax = ax, label='training',color="darkgreen")
+                self.concatenated_prediction.plot(ax = ax , label='forecast',color='red')
 
                 ax.set_title(f'Forecast vs Actuals: {self.df.name}')
                 ax.legend(loc='upper left', fontsize=8)
@@ -237,13 +283,14 @@ class ForecastHandler():
                 self.prediction_list=[]
                 self.df_predicted = None
                 self.measurement=measurement
-                self.past_predicted = []
+                # self.past_predicted = []
                 self.n_predictions=n_periods # quanti ne predico
                 self.images = {
                         "Temperature": "",
                         "Gas": "",
                         "Humidity": ""
                 }
+                self.series_list_predicted = []
 
 
         @staticmethod
@@ -265,15 +312,16 @@ class ForecastHandler():
                 return str(freq)+"s"
                 
           
-        def get_predictions_list(self, series_list):
+        def get_predictions_list(self, series_list, series_list_predicted):
                 # series_list=get_dataframe_from_influxdb(self.measurement)
 
                 for df in series_list:
 
+                        # print("============")
+                        # print(f"DF NAME: {df.name}")
+                        # print("============")
                         if "Device" in df.name or "GPS" in df.name:
                                 pass # print(f"{df.name} is not to predict")
-                        elif "predicted" in df.name:
-                                self.past_predicted.append(df)
                         else:
                                 
                                 # print("=============GET PREDICTION LIST===========>")
@@ -293,25 +341,25 @@ class ForecastHandler():
                                 # print(predictions)
                                 self.prediction_list.append(self.predictions)
 
-                                self.images[df.name] = forcast.get_image_result()
+                                self.images[df.name] = forcast.get_image_result(series_list_predicted)
                 return self.prediction_list
 
 
         def get_predicted_df(self):
-                series_list=get_dataframe_from_influxdb(self.measurement)
+                series_list_real, self.series_list_predicted=get_dataframe_from_influxdb(self.measurement)
 
                 #print("=============ARA ARA===========>")
                 #print(series_list)
                 #print("=============ARA ARA===========>")
-                self.get_predictions_list(series_list)
+                self.get_predictions_list(series_list_real, self.series_list_predicted)
                                 
                 df_device={}
-                for df in series_list:
+                for df in series_list_real:
                         if "Device" in df.name:
                               df_device=df
 
                 df_gps={}
-                for df in series_list:
+                for df in series_list_real:
                         if "GPS" in df.name:
                               df_gps=df
 
@@ -340,13 +388,20 @@ class ForecastHandler():
                 return self.df_predicted
 
         def set_past_prediction(self):
-                self.df_predicted
-                self.past_predicted
-                self.concatenated_prediction= pd.concat([self.past_predicted,self.df_predicted])#, ignore_index=True, sort=False)  
-                print("SONO qUII") 
-                print(self.past_predicted)
-                print("SONO qUII")
+                # print("[PREDICTED]================>")
 
+                df = pd.concat(self.series_list_predicted, axis=1)
+                df.reset_index(inplace=True)
+                df = df.rename(columns = {'ds':'Time'})
+
+                # print(df)
+                # print("[PREDICTED-END]============>")
+                # print(self.df_predicted)
+                # print("===========================>")
+                self.concatenated_prediction= pd.concat([df,self.df_predicted])#, ignore_index=True, sort=False)  
+                # print("SONO qUII") 
+                # print(self.concatenated_prediction)
+                # print("SONO qUII")
                 
         
         def post_predictions(self):

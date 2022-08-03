@@ -63,29 +63,38 @@ def influxdb_query(measurement=""):
 
   #  query_api = client.query_api()
 
-    query = f' from(bucket:"{influx_parameters["bucket"]}")\
+    query_real_data = f' from(bucket:"{influx_parameters["bucket"]}")\
     |> range(start: -30d)\
     |> filter(fn:(r) => r["_measurement"] == "{measurement}")\
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value" )\
-    |> keep(columns: ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"])'
+    |> keep(columns: ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"])'
+
+
+    query_predicted_data = f' from(bucket:"{influx_parameters["bucket"]}")\
+    |> range(start: -30d)\
+    |> filter(fn:(r) => r["_measurement"] == "{measurement}")\
+    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value" )\
+    |> keep(columns: ["Device", "GPS","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"])'
 
     #print(query)
 
 
-    tables = query_api.query_data_frame(query=query, org=user)
-    #print(type(tables))
+    tables_real_data = query_api.query_data_frame(query=query_real_data, org=user)
 
+    tables_predicted_data = query_api.query_data_frame(query=query_predicted_data, org=user)
 
-    try:
-        StorageHandler().save_data_csv(tables, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"] ,measurement)
-    except:
-        pass
-    try:
-        StorageHandler().save_data_csv(tables, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"] ,measurement)
-    except:
-        pass
+    
 
-    return tables
+    # try:
+    #     StorageHandler().save_data_csv(tables_real_data, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"] ,measurement)
+    # except:
+    #     pass
+    # try:
+    #     StorageHandler().save_data_csv(tables_real_data, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"] ,measurement)
+    # except:
+    #     pass
+
+    return tables_real_data, tables_predicted_data
 
 
 def dataframe2series_list(df):
@@ -100,33 +109,43 @@ def dataframe2series_list(df):
 
 
 def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table","RSSI"], masking_device=None):
-    table=influxdb_query(measurement)
-    table = table.dropna()
-    
-    # print("=============>")
-    # print(table)
-    # print("=============>")
-    # print(measurement)
-    # print("=============>")
-    
-    
+    # table=influxdb_query(measurement)
+    def __table_cleaning(table):
+        
+        
+        print("=============>")
+        print(type(table))
+        print(table)
+        print("=============>")
+        table = table.dropna()
+        # print(measurement)
+        # print("=============>")
+        
+        
 
-    table = table.drop(columns=drop_columns, axis=1, errors='ignore')
-    table=table.rename(columns={"_time":"ds"})
-    # table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
-    #print(table)
-    #print(table_notime)
-    if masking_device!= None:
-        mask = table['Device'].str.contains(masking_device)
-        table = table[mask]
-        #table_NonAccl = table[~mask]
+        table = table.drop(columns=drop_columns, axis=1, errors='ignore')
+        table=table.rename(columns={"_time":"ds"})
+        # table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
+        #print(table)
+        #print(table_notime)
+        if masking_device!= None:
+            mask = table['Device'].str.contains(masking_device)
+            table = table[mask]
+            #table_NonAccl = table[~mask]
 
-    df= table.set_index('ds')#.drop(columns=["Device"], axis=1, errors='ignore')
-    # df=df.dropna()
-    #print(df)
+        df= table.set_index('ds')#.drop(columns=["Device"], axis=1, errors='ignore')
+        # df=df.dropna()
+        #print(df)
 
 
-    return dataframe2series_list(df)#list_series
+        return dataframe2series_list(df)#list_series
+
+    table_real_data, table_predicted_data=influxdb_query(measurement)
+
+    table_real_data = __table_cleaning(table_real_data)
+    table_predicted_data = __table_cleaning(table_predicted_data)
+
+    return table_real_data, table_predicted_data
 
 def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
 
@@ -152,8 +171,15 @@ def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
 
 if __name__=="__main__":
 
-    list_series=get_dataframe_from_influxdb(measurement="test-july27-3")
-    for serie in list_series:
+    list_series_real, list_series_predicted=get_dataframe_from_influxdb(measurement=influx_parameters["measurement"])
+    
+    for serie in list_series_real:
+        print()
+        print(serie)
+        print(serie.shape[0])
+        print()
+    
+    for serie in list_series_predicted:
         print()
         print(serie)
         print(serie.shape[0])
