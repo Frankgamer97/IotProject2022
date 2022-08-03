@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from pmdarima.preprocessing import FourierFeaturizer
 import pickle
 from influxdb import get_dataframe_from_influxdb, influxdb_post
-from utility import influxdb_forecast_sample, influxdb_measurement, influxdb_past_sample
+from utility import influxdb_forecast_sample, influx_parameters, influxdb_past_sample
 
 from DataStorage import StorageHandler
 
@@ -124,8 +124,10 @@ class Forecast:
                         end=len(exog)
                         #print(len(exog))
                         start=int(end-Forecast.seasonality)
-                        fc = self.fitted_model.predict(n_periods=n_periods,exogenous=exog[start:n_periods])
-
+                        try:
+                                fc = self.fitted_model.predict(n_periods=n_periods,exogenous=exog[start:n_periods])
+                        except Exception as e:
+                                fc = [np.nan] * n_periods if n_periods > 1 else np.nan
                         last_rev=self.df.index[-1]
                         #date_range= pd.date_range(last_rev+pd.DateOffset(1),last_rev+pd.DateOffset(n_periods), freq=freq)
                         date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
@@ -133,8 +135,20 @@ class Forecast:
                         #fc_series = pd.Series(fc)
                         self.predictions = pd.Series(list(fc), index=date_forcasted).rename(self.df.name+"_predicted")
                 else:
-                        fc = self.fitted_model.predict(n_periods=n_periods)
+                        '''
+                        print()
+                        print("[Forecast] start")
+                        print(self.df)
+                        print(n_periods)
+                        print(self.mparima_dict[model_name])
+                        print("[Forecast] end")
+                        print()
+                        '''
+                        try:
+                                fc = self.fitted_model.predict(n_periods=n_periods)
 
+                        except Exception as e:
+                                fc = [np.nan] * n_periods if n_periods > 1 else np.nan
                         '''
                         print("[Forecast]DF=========>")
                         print(self.df)
@@ -196,7 +210,7 @@ class Forecast:
 
 class ForecastHandler():
 
-        def __init__(self,measurement=influxdb_measurement,n_periods=influxdb_forecast_sample,maxupdate=influxdb_forecast_sample):
+        def __init__(self,measurement=influx_parameters["measurement"],n_periods=influxdb_forecast_sample,maxupdate=influxdb_forecast_sample):
                 self.countupdate= 0
                 self.maxupdate= maxupdate # quanti ne aspetto prima di postare
                 self.prediction_list=[]
@@ -283,7 +297,14 @@ class ForecastHandler():
                 self.df_predicted.reset_index(inplace=True)
                 self.df_predicted = self.df_predicted.rename(columns = {'index':'Time'})
 
-                self.df_predicted["Gas_predicted"] = self.df_predicted["Gas_predicted"].apply(lambda x: int(x))
+                '''
+                print()
+                print("[get-predicted_df] I AM HERE [start]")
+                print(self.df_predicted)
+                print("[get-predicted_df] I AM HERE [end]")
+                print()
+                '''
+                self.df_predicted["Gas_predicted"] = self.df_predicted["Gas_predicted"].apply(lambda x: int(x) if int(x) >= 0 else 0)
                 self.df_predicted["Humidity_predicted"] = self.df_predicted["Humidity_predicted"].apply(lambda x: round(x,1))
                 self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
                 self.prediction_list = []
@@ -323,6 +344,6 @@ class ForecastHandler():
 
 
 if __name__=="__main__":
-        measurement="test-july27-26"
-        handler=ForecastHandler(measurement)
+        # measurement="test-july27-26"
+        handler=ForecastHandler(influx_parameters["measurement"])
         handler.send_updates()

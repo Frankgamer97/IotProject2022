@@ -1,5 +1,5 @@
 from utility import influx_parameters, influxdb_countupdates, influxdb_maxupdate, influxdb_df_post
-from utility import influxdb_measurement, jsonpost2pandas
+from utility import jsonpost2pandas
 #from influxdb import DataFrameClient
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -119,7 +119,7 @@ def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table
 
     return dataframe2series_list(df)#list_series
 
-def send_influxdb(json_data, measurement=influxdb_measurement):
+def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
 
     global influxdb_countupdates
     global influxdb_maxupdate

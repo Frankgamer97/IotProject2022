@@ -10,18 +10,6 @@ import pandas as pd
 
 import threading
 # import Queue
-
-
-
-
-
-
-
-
-
-
-
-
 SERVER_MEASUREMENTS = 17
 
 current_protocol = {"current_protocol": "HTTP"}
@@ -29,7 +17,7 @@ current_protocol = {"current_protocol": "HTTP"}
 mqtt_handler = None
 coap_handler = None
 
-influxdb_measurement="test-august-1"
+# influxdb_measurement="test-august3-1"
 influxdb_forecast_sample = 5
 influxdb_past_sample = 5
 
@@ -55,7 +43,7 @@ influx_parameters = {
              'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
              'bucket': "esp32",
              'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
-             'measurement': "mamma"
+             'measurement': "test-august3-1"
              }
 
 

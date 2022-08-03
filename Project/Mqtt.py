@@ -5,8 +5,8 @@ import ast
 
 from utility import SERVER_MEASUREMENTS
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from utility import current_protocol, influxdb_measurement, jsonpost2pandas
-from influxdb import influxdb_post
+from utility import current_protocol, influx_parameters, jsonpost2pandas
+from influxdb import send_influxdb
 
 from DeviceStatHandler import DeviceStatHandler
 
@@ -17,7 +17,7 @@ class MqttHandler:
     bot_handler = None
     aggr_handler = None
 
-    def __init__(self, list_values, bot_handler, aggr_handler, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
+    def __init__(self, list_values, bot_handler, arima_handler ,aggr_handler, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
         self.server_name = server_name
         self.user = user
         self.password = password
@@ -36,6 +36,7 @@ class MqttHandler:
 
         MqttHandler.bot_handler = bot_handler
 
+        MqttHandler.arima_handler = arima_handler
         MqttHandler.aggr_handler = aggr_handler
         self.mqtt_thread = Thread(target=MqttHandler.bind_updating, args=(self,))
         self.mqtt_thread.daemon=True
@@ -93,10 +94,9 @@ class MqttHandler:
             MqttHandler.list_values.insert(0,json_data)
             MqttHandler.aggr_handler.update_pandas()
 
+            send_influxdb(json_data, measurement = influx_parameters["measurement"])
+            MqttHandler.arima_handler.arima_updates()
             MqttHandler.bot_handler.telegram_updates()
-            
-            influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
-
         except Exception as e:
             print("[MQTT] DATA ERROR")
             print()

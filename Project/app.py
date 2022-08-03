@@ -8,7 +8,7 @@ from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler 
-from utility import coap_handler, influxdb_measurement
+from utility import coap_handler
 from utility import get_time, is_int, get_protocol, get_IP, get_device_time
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
@@ -41,8 +41,8 @@ countupdates = 0
 maxupdate = 5
 df_post = pd.DataFrame()
 
-measurement="test-july27-31"
-arima_handler=ForecastHandler(measurement)
+# measurement="test-july27-31"
+arima_handler=ForecastHandler(influx_parameters["measurement"])
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
@@ -133,15 +133,8 @@ def updatesensor():
                        )
     aggr.update_pandas()
 
-    global measurement
-    # measurement = "test-july27-11"
-    send_influxdb(json_data, measurement = measurement)
+    send_influxdb(json_data, measurement = influx_parameters["measurement"])
     arima_handler.arima_updates()
-
-    # global debug_count
-    # debug_count += 1
-    # print(f"[POST] ======================> {debug_count}")
-
     bot_handler.telegram_updates()
     return "ok"
 
@@ -369,8 +362,8 @@ if __name__ == '__main__':
     StorageHandler.create_tmp_directories()
     ip=get_IP()
 
-    mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)
-    coap_handler = CoapHandler(listvalues, bot_handler, aggr, SERVER_IP=ip)
+    mqtt_handler = MqttHandler(listvalues, bot_handler, arima_handler, aggr)
+    coap_handler = CoapHandler(listvalues, bot_handler, arima_handler, aggr, SERVER_IP=ip)
     # stat_handler = DeviceStatHandler.control_updates()
     
 

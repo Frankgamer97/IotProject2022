@@ -4,19 +4,20 @@ import aiocoap.resource as resource
 import aiocoap
 import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS, current_protocol, influxdb_measurement,jsonpost2pandas
+from utility import SERVER_MEASUREMENTS, current_protocol, influx_parameters, jsonpost2pandas
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from influxdb import influxdb_post
+from influxdb import influxdb_post, send_influxdb
 from datetime import datetime
 from DeviceStatHandler import DeviceStatHandler
 
 class CoapServer(resource.Resource):
 
-    def __init__(self, list_values, bot_handler, aggr_handler):
+    def __init__(self, list_values, bot_handler, arima_handler, aggr_handler):
         super(CoapServer, self).__init__()
         self.list_values = list_values
         self.startMeasurements = None
         self.bot_handler = bot_handler
+        self.arima_handler = arima_handler
         self.aggr_handler = aggr_handler
     # async def render_get(self, request):
     #     print("[COAP] GET REQUEST RECEIVED: ")
@@ -75,9 +76,10 @@ class CoapServer(resource.Resource):
 
             self.list_values.insert(0, json_data)
             self.aggr_handler.update_pandas()
-            self.bot_handler.telegram_updates()
 
-            influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
+            send_influxdb(json_data, measurement = influx_parameters["measurement"])
+            self.arima_handler.arima_updates()
+            self.bot_handler.telegram_updates()
 
         except Exception as e:
             print("[COAP] PUT REQUEST ERROR")
@@ -90,13 +92,14 @@ class CoapServer(resource.Resource):
 
 
 class CoapHandler:
-    def __init__(self, list_values, bot_handler, aggr_handler, SERVER_IP="192.168.1.", SERVER_PORT=5683, UPDATE_API="update"):
+    def __init__(self, list_values, bot_handler, arima_handler, aggr_handler, SERVER_IP="192.168.1.", SERVER_PORT=5683, UPDATE_API="update"):
 
         self.SERVER_IP=SERVER_IP
         self.SERVER_PORT=SERVER_PORT
         self.UPDATE_API = UPDATE_API
         self.list_values = list_values
         self.bot_handler = bot_handler
+        self.arima_handler = arima_handler
         self.aggr_handler = aggr_handler
         
         self.coap_thread = Thread(target=CoapHandler.setup_coap, args=(self,))
@@ -108,7 +111,7 @@ class CoapHandler:
     @staticmethod
     def start_coap(self, event_loop):
         root = resource.Site()
-        root.add_resource([self.UPDATE_API], CoapServer(self.list_values, self.bot_handler, self.aggr_handler))
+        root.add_resource([self.UPDATE_API], CoapServer(self.list_values, self.bot_handler, self.arima_handler, self.aggr_handler))
         
         context = aiocoap.Context.create_server_context(site=root, bind=(self.SERVER_IP, self.SERVER_PORT))
         asyncio.Task(context)
