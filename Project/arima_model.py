@@ -237,6 +237,7 @@ class ForecastHandler():
                 self.prediction_list=[]
                 self.df_predicted = None
                 self.measurement=measurement
+                self.past_predicted = []
                 self.n_predictions=n_periods # quanti ne predico
                 self.images = {
                         "Temperature": "",
@@ -271,6 +272,8 @@ class ForecastHandler():
 
                         if "Device" in df.name or "GPS" in df.name:
                                 pass # print(f"{df.name} is not to predict")
+                        elif "predicted" in df.name:
+                                self.past_predicted.append(df)
                         else:
                                 
                                 # print("=============GET PREDICTION LIST===========>")
@@ -333,9 +336,18 @@ class ForecastHandler():
                 self.df_predicted["Humidity_predicted"] = self.df_predicted["Humidity_predicted"].apply(lambda x: round(x,1))
                 self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
                 self.prediction_list = []
+
                 return self.df_predicted
 
-                                
+        def set_past_prediction(self):
+                self.df_predicted
+                self.past_predicted
+                self.concatenated_prediction= pd.concat([self.past_predicted,self.df_predicted])#, ignore_index=True, sort=False)  
+                print("SONO qUII") 
+                print(self.past_predicted)
+                print("SONO qUII")
+
+                
         
         def post_predictions(self):
                 # sleep(influxdb_forecast_sample * 1.5)
@@ -347,6 +359,7 @@ class ForecastHandler():
 
         def send_updates(self):
                 self.get_predicted_df()
+                self.set_past_prediction()
                 self.post_predictions()
 
         def arima_updates(self):

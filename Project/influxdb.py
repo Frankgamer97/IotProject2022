@@ -67,7 +67,7 @@ def influxdb_query(measurement=""):
     |> range(start: -30d)\
     |> filter(fn:(r) => r["_measurement"] == "{measurement}")\
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value" )\
-    |> keep(columns: ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"])'
+    |> keep(columns: ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"])'
 
     #print(query)
 
@@ -76,11 +76,15 @@ def influxdb_query(measurement=""):
     #print(type(tables))
 
 
-
     try:
         StorageHandler().save_data_csv(tables, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"] ,measurement)
     except:
         pass
+    try:
+        StorageHandler().save_data_csv(tables, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"] ,measurement)
+    except:
+        pass
+
     return tables
 
 
