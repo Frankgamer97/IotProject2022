@@ -43,7 +43,7 @@ influx_parameters = {
              'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
              'bucket': "esp32",
              'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
-             'measurement': "test-august3-1"
+             'measurement': "test-august3-6"
              }
 
 

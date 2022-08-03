@@ -28,9 +28,14 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
     print(json_data)
-    # print(measurement)
 
-    write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
+    json_data.dropna(inplace = True)
+    
+    if json_data.empty:
+        print("[INFLUXDB_POST] EMPTY")
+    else:
+        write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
+    
     ###### IMPORTANTE
     return "ok"
 
