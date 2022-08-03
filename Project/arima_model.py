@@ -124,6 +124,16 @@ class Forecast:
                         start=int(end-Forecast.seasonality)
                         fc = self.fitted_model.predict(n_periods=n_periods,exogenous=exog[start:n_periods])
 
+                        last_rev=self.df.index[-1]
+                        #date_range= pd.date_range(last_rev+pd.DateOffset(1),last_rev+pd.DateOffset(n_periods), freq=freq)
+                        date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
+                        date_forcasted= pd.Series(date_range)
+                        #fc_series = pd.Series(fc)
+                        self.predictions = pd.Series(list(fc), index=date_forcasted).rename(self.df.name+"_predicted")
+                else:
+                        fc = self.fitted_model.predict(n_periods=n_periods)
+
+                        '''
                         print("[Forecast]DF=========>")
                         print(self.df)
                         print("[Forecast]DF=========>")
@@ -143,15 +153,8 @@ class Forecast:
                         print("last")
                         print(self.df_original.index[-1])
                         print("[Forecast]DFOriginalindex=========>")
+                        '''
 
-                        last_rev=self.df.index[-1]
-                        #date_range= pd.date_range(last_rev+pd.DateOffset(1),last_rev+pd.DateOffset(n_periods), freq=freq)
-                        date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
-                        date_forcasted= pd.Series(date_range)
-                        #fc_series = pd.Series(fc)
-                        self.predictions = pd.Series(list(fc), index=date_forcasted).rename(self.df.name+"_predicted")
-                else:
-                        fc = self.fitted_model.predict(n_periods=n_periods)
                         last_rev=self.df.index[-1]
 
                         # print("=============>")
@@ -159,9 +162,20 @@ class Forecast:
                         # print("=============>")
 
                         date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
+
+                        # print("[Forecast]Date_range=========>")
+                        # print(date_range)
+                        # print("[Forecast]Date_range=========>")
+
                         date_forcasted= pd.Series(date_range)
                         #fc_series = pd.Series(fc)
                         self.predictions = pd.Series(list(fc), index=date_forcasted).rename(self.df.name+"_predicted")
+
+                        
+                        # print("[Forecast]Predictions=========>")
+                        # print(self.predictions)
+                        # print("[Forecast]Predictions=========>")
+
                 return self.predictions
 
 
@@ -220,9 +234,9 @@ class ForecastHandler():
                                 pass # print(f"{df.name} is not to predict")
                         else:
                                 
-                                print("=============GET PREDICTION LIST===========>")
-                                print(df)
-                                print("=============GET PREDICTION LIST===========>")
+                                # print("=============GET PREDICTION LIST===========>")
+                                # print(df)
+                                # print("=============GET PREDICTION LIST===========>")
 
                                 # df=df
                                 forcast=Forecast(df,seasonality=False)
@@ -231,11 +245,11 @@ class ForecastHandler():
                                 forcast.tuning()
                                 forcast.fit(df.name)
                               
-                                predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
+                                self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
                                 # forcast.plot_forecast() ####IMPORTANTE
                                 # print("predictions\n")
                                 # print(predictions)
-                                self.prediction_list.append(predictions)
+                                self.prediction_list.append(self.predictions)
                 return self.prediction_list
 
 
@@ -270,6 +284,7 @@ class ForecastHandler():
                 self.df_predicted["Gas_predicted"] = self.df_predicted["Gas_predicted"].apply(lambda x: int(x))
                 self.df_predicted["Humidity_predicted"] = self.df_predicted["Humidity_predicted"].apply(lambda x: round(x,1))
                 self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
+                self.prediction_list = []
                 return self.df_predicted
 
                                 
@@ -277,6 +292,7 @@ class ForecastHandler():
         def post_predictions(self):
                 # sleep(influxdb_forecast_sample * 1.5)
                 influxdb_post(self.df_predicted, measurement=self.measurement,tag_col=["Device","GPS"])
+
 
 
 
@@ -290,14 +306,15 @@ class ForecastHandler():
                         self.countupdate = 0
                         try:
                                 self.send_updates()
-                        except:
+                        except Exception as e:
                                 print("Too few observations to estimate starting parameters")
+                                print(str(e))
                 else:
                         self.countupdate += 1
 
 
 
 if __name__=="__main__":
-        measurement="test-july27-15"
+        measurement="test-july27-26"
         handler=ForecastHandler(measurement)
         handler.send_updates()
