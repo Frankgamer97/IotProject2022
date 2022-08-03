@@ -27,14 +27,14 @@ class TelegramBotHandler():
                 data_column = list(data[column].values())
                 self.df[column] = data_column
 
-            # image_export(self.df,self.dir+"/table.png") ###########IMPORTANTE
-            # self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb')) ###########IMPORTANTE
+            image_export(self.df,self.dir+"/table.png") ###########IMPORTANTE
+            self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb')) ###########IMPORTANTE
             print("[TELEGRAM_BOT] POST")
 
 
 
     def telegram_updates(self):
-        if self.countupdate>=self.maxupdate:
+        if self.countupdate == self.maxupdate - 1:
             self.countupdate=0
             self.__send_updates()
         else:

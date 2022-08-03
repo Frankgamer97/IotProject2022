@@ -14,6 +14,8 @@ from utility import influxdb_forecast_sample, influxdb_measurement, influxdb_pas
 
 from DataStorage import StorageHandler
 
+import traceback
+
 
 class Forecast:
         seasonality=365
@@ -309,6 +311,12 @@ class ForecastHandler():
                         except Exception as e:
                                 print("Too few observations to estimate starting parameters")
                                 print(str(e))
+
+                                print()
+                                print()
+                                traceback.print_exc()
+                                print()
+                                print()
                 else:
                         self.countupdate += 1
 

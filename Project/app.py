@@ -41,7 +41,7 @@ countupdates = 0
 maxupdate = 5
 df_post = pd.DataFrame()
 
-measurement="test-july27-26"
+measurement="test-july27-31"
 arima_handler=ForecastHandler(measurement)
 
 #app = Flask(__name__, template_folder='templates')
@@ -132,7 +132,6 @@ def updatesensor():
                       #  }
                        )
     aggr.update_pandas()
-    bot_handler.telegram_updates()
 
     global measurement
     # measurement = "test-july27-11"
@@ -143,6 +142,7 @@ def updatesensor():
     # debug_count += 1
     # print(f"[POST] ======================> {debug_count}")
 
+    bot_handler.telegram_updates()
     return "ok"
 
 
