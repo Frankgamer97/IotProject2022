@@ -1,7 +1,7 @@
 from utility import telegram_api_key, telegram_chat_id, telegram_bot_update_frequency
 from telegram import Bot as TelegramBot
 from pandas import DataFrame
-from dataframe_image import export as image_export
+from DataStorage import StorageHandler
 
 class TelegramBotHandler():
     def __init__(self, aggregation_handler, maxupdate=telegram_bot_update_frequency, image_dir="tmp"):
@@ -27,8 +27,13 @@ class TelegramBotHandler():
                 data_column = list(data[column].values())
                 self.df[column] = data_column
 
-            image_export(self.df,self.dir+"/table.png") ###########IMPORTANTE
-            self.bot.sendPhoto(chat_id=telegram_chat_id, photo=open(self.dir+"/table.png",'rb')) ###########IMPORTANTE
+            self.df["max"] = self.df["max"].apply(lambda x: round(x,1))
+            self.df["min"] = self.df["min"].apply(lambda x: round(x,1))
+            self.df["mean"] = self.df["mean"].apply(lambda x: round(x,2))
+            self.df["std"] = self.df["std"].apply(lambda x: round(x,2))
+
+            StorageHandler.save_telegrame_bot_image(self.df)
+            self.bot.sendPhoto(chat_id=telegram_chat_id, photo=StorageHandler.load_telegrame_bot_image()) ###########IMPORTANTE
             print("[TELEGRAM_BOT] POST")
 
 

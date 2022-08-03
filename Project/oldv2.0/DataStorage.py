@@ -43,7 +43,7 @@ class StorageHandler():
 
 
     @staticmethod
-    def __get_tmp_data_dir():
+    def __get_tmp_dir():
         return os.path.join(StorageHandler.__get_project_directory(), "tmp")
 
     @staticmethod
@@ -57,8 +57,8 @@ class StorageHandler():
 
     @staticmethod
     def create_tmp_directories():
-        if not os.path.exists(StorageHandler.__get_tmp_data_dir()):
-            os.mkdir(StorageHandler.__get_tmp_data_dir())
+        if not os.path.exists(StorageHandler.__get_tmp_dir()):
+            os.mkdir(StorageHandler.__get_tmp_dir())
 
         if not os.path.exists(StorageHandler.__get_forecast_model_dir()):
             os.makedirs(StorageHandler.__get_forecast_model_dir())
