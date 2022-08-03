@@ -8,7 +8,6 @@ from utility import SERVER_MEASUREMENTS, current_protocol, influx_parameters, js
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
 from influxdb import influxdb_post, send_influxdb
 from datetime import datetime
-from DeviceStatHandler import DeviceStatHandler
 
 class CoapServer(resource.Resource):
 

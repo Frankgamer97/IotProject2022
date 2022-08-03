@@ -8,8 +8,6 @@ from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getCon
 from utility import current_protocol, influx_parameters, jsonpost2pandas
 from influxdb import send_influxdb
 
-from DeviceStatHandler import DeviceStatHandler
-
 
 class MqttHandler:
     list_values = None

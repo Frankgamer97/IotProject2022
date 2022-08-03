@@ -1,8 +1,12 @@
 from time import sleep
 from statsmodels.tsa.arima_model import ARIMA
+from matplotlib.figure import Figure
+from io import BytesIO
+
 import pmdarima as pm
 import pandas as pd
 import numpy as np
+import pybase64
 #from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.arima.model import ARIMA
 
@@ -193,8 +197,7 @@ class Forecast:
                         # print("[Forecast]Predictions=========>")
 
                 return self.predictions
-
-
+        
         def plot_forecast(self):
                 plt.figure(figsize=(12,5), dpi=100)
 
@@ -205,6 +208,24 @@ class Forecast:
                 plt.title(f'Forecast vs Actuals: {self.df.name}')
                 plt.legend(loc='upper left', fontsize=8)
                 plt.show()
+        
+        def get_image_result(self):
+                fig = Figure(figsize=(12,5), dpi=100)
+                
+                ax = fig.subplots()
+                                        
+                ax.plot(self.df_original, label='training',color="darkgreen")
+                ax.plot(self.predictions, label='forecast',color='red')
+
+                ax.set_title(f'Forecast vs Actuals: {self.df.name}')
+                ax.legend(loc='upper left', fontsize=8)
+
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data = pybase64.b64encode(buf.getbuffer()).decode("ascii")
+                buf.seek(0)
+                
+                return f"data:image/png;base64,{data}"
 
 
 
@@ -217,8 +238,11 @@ class ForecastHandler():
                 self.df_predicted = None
                 self.measurement=measurement
                 self.n_predictions=n_periods # quanti ne predico
-
-
+                self.images = {
+                        "Temperature": "",
+                        "Gas": "",
+                        "Humidity": ""
+                }
 
 
         @staticmethod
@@ -243,7 +267,6 @@ class ForecastHandler():
         def get_predictions_list(self, series_list):
                 # series_list=get_dataframe_from_influxdb(self.measurement)
 
-
                 for df in series_list:
 
                         if "Device" in df.name or "GPS" in df.name:
@@ -266,6 +289,8 @@ class ForecastHandler():
                                 # print("predictions\n")
                                 # print(predictions)
                                 self.prediction_list.append(self.predictions)
+
+                                self.images[df.name] = forcast.get_image_result()
                 return self.prediction_list
 
 

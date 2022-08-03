@@ -26,7 +26,6 @@ from datetime import datetime
 import pybase64
 from io import BytesIO
 from matplotlib.figure import Figure
-# from DeviceStatHandler import DeviceStatHandler
 
 import os
 import pandas as pd
@@ -329,7 +328,7 @@ def graphs():
     global aggr
 
     image = aggr.build_graph("Delay", graph_meta["Delay"]["label"], graph_meta["Delay"]["title"])
-    data = {"graphs": ["Delay","Ratio"], "first_image": image, "intervall": graph_intervall}
+    data = {"graphs": list(graph_meta.keys()), "first_image": image, "intervall": graph_intervall}
 
     return render_template('graphs.html', data=data)
 
@@ -337,10 +336,17 @@ def graphs():
 def getGraph():
     global aggr
     graph =request.args.get('graph')
+    
+    if graph == "Delay" or graph == "Ratio":
+        image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
 
+    elif "Arima" in graph:
 
+        image_name = graph.split(" ")[1]
+        image = arima_handler.images[image_name]
 
-    image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
+    else:
+        print("[getGraph] WARNING: unknown image selected")
 
     return image
 
@@ -364,7 +370,6 @@ if __name__ == '__main__':
 
     mqtt_handler = MqttHandler(listvalues, bot_handler, arima_handler, aggr)
     coap_handler = CoapHandler(listvalues, bot_handler, arima_handler, aggr, SERVER_IP=ip)
-    # stat_handler = DeviceStatHandler.control_updates()
     
 
     app.run(host=ip,port=5000)

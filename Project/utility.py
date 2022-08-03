@@ -43,7 +43,7 @@ influx_parameters = {
              'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
              'bucket': "esp32",
              'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
-             'measurement': "test-august3-6"
+             'measurement': "test-august3-7"
              }
 
 
@@ -57,7 +57,11 @@ stat_data_timeout = 10
 stat_data_intervall = 20
 graph_meta={
     "Delay": {"label": "Seconds", "title": "Average Delay"},
-    "Ratio": {"label": "PDR", "title": "Average PDR"}
+    "Ratio": {"label": "PDR", "title": "Average PDR"},
+
+    "Arima Temperature": {"title": "Forecast Temperature"},
+    "Arima Humidity": {"title": "Forecast Humidity"},
+    "Arima Gas": {"title": "Forecast Gas"}
 }
 
 graph_intervall = 500
