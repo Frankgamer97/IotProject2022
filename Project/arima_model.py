@@ -312,10 +312,10 @@ class ForecastHandler():
                 return str(freq)+"s"
                 
           
-        def get_predictions_list(self, series_list, series_list_predicted):
+        def get_predictions_list(self):
                 # series_list=get_dataframe_from_influxdb(self.measurement)
 
-                for df in series_list:
+                for df in self.series_list_real:
 
                         # print("============")
                         # print(f"DF NAME: {df.name}")
@@ -341,25 +341,27 @@ class ForecastHandler():
                                 # print(predictions)
                                 self.prediction_list.append(self.predictions)
 
-                                self.images[df.name] = forcast.get_image_result(series_list_predicted)
+                                
+
+                                self.images[df.name] = forcast.get_image_result(self.series_list_predicted)
                 return self.prediction_list
 
 
         def get_predicted_df(self):
-                series_list_real, self.series_list_predicted=get_dataframe_from_influxdb(self.measurement)
+                self.series_list_real, self.series_list_predicted=get_dataframe_from_influxdb(self.measurement)
 
                 #print("=============ARA ARA===========>")
                 #print(series_list)
                 #print("=============ARA ARA===========>")
-                self.get_predictions_list(series_list_real, self.series_list_predicted)
+                self.get_predictions_list()
                                 
                 df_device={}
-                for df in series_list_real:
+                for df in self.series_list_real:
                         if "Device" in df.name:
                               df_device=df
 
                 df_gps={}
-                for df in series_list_real:
+                for df in self.series_list_real:
                         if "GPS" in df.name:
                               df_gps=df
 

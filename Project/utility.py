@@ -43,7 +43,7 @@ influx_parameters = {
              'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
              'bucket': "esp32",
              'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
-             'measurement': "test-august3-19"
+             'measurement': "test-august3-20"
              }
 
 
@@ -64,7 +64,7 @@ graph_meta={
     "Arima Gas": {"title": "Forecast Gas"}
 }
 
-graph_intervall = 500
+graph_intervall = 2500
 
 ip_userid_dict = {}
 userid_ip_dict = {}

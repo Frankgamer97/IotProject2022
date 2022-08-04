@@ -23,7 +23,7 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
         measurement= influx_parameters["measurement"]
 
     # date_utils.date_helper = DateHelper(timezone=tzlocal())
-    client = InfluxDBClient(url=server, token=token, org=user)
+    client = InfluxDBClient(url=server, token=token, org=user, timeout=10000)
  
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
