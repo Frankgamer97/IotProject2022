@@ -1,5 +1,8 @@
 from copy import deepcopy
 from time import sleep
+from tkinter import image_names
+from threading import Thread
+
 from statsmodels.tsa.arima_model import ARIMA
 from matplotlib.figure import Figure
 from io import BytesIO
@@ -27,7 +30,7 @@ class Forecast:
         #self.dict_model={"temp_arima":None, "hum_arima":None,"gas_arima":None}
         dict_prediction={"temp_arima":None, "hum_arima":None,"gas_arima":None}
 
-        def __init__(self, df,seasonality=True):
+        def __init__(self, df,seasonality=True, series_list_predicted = []):
                 #self.dict_model={"temp_arima":None, "hum_arima":None,"gas_arima":None}
                 self.df =df   #it's a pandaseries
                 self.df_original = df
@@ -36,6 +39,7 @@ class Forecast:
                 self.fitted_model=None # it's pdmarima model
                 self.mparima_dict={}
                 self.seasonality=seasonality
+                self.series_list_predicted = series_list_predicted
 
 
         def get_seasonality(self):
@@ -223,47 +227,27 @@ class Forecast:
                         df = df.set_index("Time")
 
                         df = df.squeeze()
-                        # print("========MACHECAZZ1")
-                        # print(df)
-                        # print("========MACHECAZZ1-FINE")
-
                         
                         local_predictions.name = self.df_original.name+"_predicted"
                         self.concatenated_prediction= pd.concat([df,local_predictions])
                 else:
                         self.concatenated_prediction = local_predictions        
 
-                
-                print("========MACHECAZZ2")
-                print(self.concatenated_prediction)
-
                 self.concatenated_prediction = self.concatenated_prediction.apply(lambda sorata: round(sorata,1))
-                print("========MACHECAZZ2-FINE")
-                        
                 
-                print("========MACHECAZZ-ORIGINAL")
-                print(self.df_original)
-                print("========MACHECAZZ3-ORIGINAL-FINE")
-                        
 
                 fig = Figure(figsize=(12,5), dpi=100)
                 
                 ax = fig.subplots()
-                                        
-                # ax.plot(self.df_original, label='training',color="darkgreen")
-                # ax.plot(self.concatenated_prediction, label='forecast',color='red')
 
 
                 self.df_original = self.df_original.rename(index="Time")
                 self.concatenated_prediction = self.concatenated_prediction.rename(index="Time")
 
-
-
-
                 self.df_original.plot(ax = ax, label='training',color="darkgreen")
                 self.concatenated_prediction.plot(ax = ax , label='forecast',color='red')
 
-                ax.set_title(f'Forecast vs Actuals: {self.df.name}')
+                ax.set_title(f'Forecast vs Actuals: {self.df_original.name}')
                 ax.legend(loc='upper left', fontsize=8)
 
                 buf = BytesIO()
@@ -272,8 +256,6 @@ class Forecast:
                 buf.seek(0)
                 
                 return f"data:image/png;base64,{data}"
-
-
 
 class ForecastHandler():
 
@@ -285,13 +267,15 @@ class ForecastHandler():
                 self.measurement=measurement
                 # self.past_predicted = []
                 self.n_predictions=n_periods # quanti ne predico
+
+                self.pred = {}
                 self.images = {
                         "Temperature": "",
                         "Gas": "",
                         "Humidity": ""
                 }
                 self.series_list_predicted = []
-
+                self.image_thread = Thread(target=ForecastHandler.build_image_thread, args=(self,))
 
         @staticmethod
         def get_data_avg(df,p = influxdb_past_sample):
@@ -329,21 +313,22 @@ class ForecastHandler():
                                 # print("=============GET PREDICTION LIST===========>")
 
                                 # df=df
-                                forcast=Forecast(df,seasonality=False)
+                                forcast=Forecast(df,seasonality=False, series_list_predicted = self.series_list_predicted)
                                 #print("SEASON",forcast.D)
                                 #print("STATION",forcast.d)
                                 forcast.tuning()
                                 forcast.fit(df.name)
                               
-                                self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))# forcast.mparima_dict[df.name]["order"][0]))
+                                self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))
                                 # forcast.plot_forecast() ####IMPORTANTE
                                 # print("predictions\n")
                                 # print(predictions)
                                 self.prediction_list.append(self.predictions)
+                                self.pred[df.name] = self.predictions
 
                                 
 
-                                self.images[df.name] = forcast.get_image_result(self.series_list_predicted)
+                                # self.images[df.name] = forcast.get_image_result(self.series_list_predicted)
                 return self.prediction_list
 
 
@@ -387,8 +372,84 @@ class ForecastHandler():
                 self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
                 self.prediction_list = []
 
+
+
+
+                df = pd.concat(self.series_list_predicted, axis=1)
+                df.reset_index(inplace=True)
+                df = df.rename(columns = {'ds':'Time'})
+
+                self.df_original = pd.concat(self.series_list_real, axis=1)
+                self.df_original.reset_index(inplace=True)
+                self.df_original = self.df_original.rename(columns = {'ds':'Time'})
+
+
+
+                # local_predictions = deepcopy(self.predictions)
+                self.df_concatenated= None
+        
+                if "Gas_predicted" in df.columns:
+
+                        # df = df[["Time",self.df_original.name+"_predicted"]]
+                        # df = df.set_index("Time")
+
+                        # df = df.squeeze()
+                        
+                        #local_predictions.name = self.df_original.name+"_predicted"
+                        #self.concatenated_prediction= pd.concat([df,local_predictions])
+                        self.df_concatenated =pd.concat([df,self.df_predicted])
+
+                else:
+                        self.df_concatenated = self.df_predicted        
+
+                # df_concatenated = df_concatenated.apply(lambda x: round(x,1))
+                '''
+                print("[get_predicted_df][START]ORIGINAL================>")
+                print(self.df_original)
+                print("[get_predicted_df][END]ORIGINAL==================>")
+                
+
+                print("[get_predicted_df][START]PRED================>")
+                print(self.df_concatenated)
+                print("[get_predicted_df][END]PRED==================>")
+                '''
+                
+                if self.image_thread.is_alive():
+                   self.image_thread.join(0)     
+
+                self.image_thread = Thread(target=ForecastHandler.build_image_thread, args=(self,))
+                self.image_thread.start()
                 return self.df_predicted
 
+
+        @staticmethod
+        def build_image_thread(forecast_handler):
+                image_names = ["Temperature", "Humidity", "Gas"]
+
+                for name in image_names:
+                        original_data = forecast_handler.df_original[["Time", name]]
+                        predicted_data = forecast_handler.df_concatenated[["Time", name+"_predicted"]]
+
+
+                        fig = Figure(figsize=(12,5), dpi=100)
+                        ax = fig.subplots()
+
+                        original_data = original_data.set_index("Time").squeeze()
+                        predicted_data = predicted_data.set_index("Time").squeeze()
+                        
+                        original_data.plot(ax = ax, label='training',color="darkgreen")
+                        predicted_data.plot(ax = ax , label='forecast',color='red')
+
+                        ax.set_title(f'Forecast vs Actuals: {name}')
+                        ax.legend(loc='upper left', fontsize=8)
+
+                        buf = BytesIO()
+                        fig.savefig(buf, format="png")
+                        data = pybase64.b64encode(buf.getbuffer()).decode("ascii")
+                        buf.seek(0)
+                        forecast_handler.images[name] = f"data:image/png;base64,{data}"
+
+        
         def set_past_prediction(self):
                 # print("[PREDICTED]================>")
 

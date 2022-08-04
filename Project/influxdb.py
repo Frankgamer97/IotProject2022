@@ -112,11 +112,15 @@ def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table
     # table=influxdb_query(measurement)
     def __table_cleaning(table):
         
-        
+        '''
         print("=============>")
         print(type(table))
         print(table)
         print("=============>")
+        '''
+        if isinstance(table, list):
+            table = pd.concat(table)    
+
         table = table.dropna()
         # print(measurement)
         # print("=============>")
@@ -124,21 +128,22 @@ def get_dataframe_from_influxdb(measurement, drop_columns=["AQI","result","table
         
 
         table = table.drop(columns=drop_columns, axis=1, errors='ignore')
-        table=table.rename(columns={"_time":"ds"})
-        # table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
-        #print(table)
-        #print(table_notime)
-        if masking_device!= None:
-            mask = table['Device'].str.contains(masking_device)
-            table = table[mask]
-            #table_NonAccl = table[~mask]
+        if not table.empty:
+            table=table.rename(columns={"_time":"ds"})
+            # table_notime=table.drop(columns=["_time"], axis=1, errors='ignore')
+            #print(table)
+            #print(table_notime)
+            if masking_device!= None:
+                mask = table['Device'].str.contains(masking_device)
+                table = table[mask]
+                #table_NonAccl = table[~mask]
 
-        df= table.set_index('ds')#.drop(columns=["Device"], axis=1, errors='ignore')
-        # df=df.dropna()
-        #print(df)
+            table= table.set_index('ds')#.drop(columns=["Device"], axis=1, errors='ignore')
+            # df=df.dropna()
+            #print(df)
 
 
-        return dataframe2series_list(df)#list_series
+        return dataframe2series_list(table)#list_series
 
     table_real_data, table_predicted_data=influxdb_query(measurement)
 
@@ -163,7 +168,7 @@ def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
             influxdb_post(influxdb_df_post, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
             influxdb_df_post = pd.DataFrame()
         except:
-            print("Too few values to predict")
+            print("[send_influxdb] exception: post failed")
             pass
     else:
         influxdb_countupdates += 1
