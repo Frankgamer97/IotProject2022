@@ -1,7 +1,8 @@
 from copy import deepcopy
 from time import sleep
-from tkinter import image_names
+
 from threading import Thread
+from turtle import left
 
 from statsmodels.tsa.arima_model import ARIMA
 from matplotlib.figure import Figure
@@ -16,6 +17,7 @@ from statsmodels.tsa.arima.model import ARIMA
 
 from matplotlib import pyplot as plt
 from pmdarima.preprocessing import FourierFeaturizer
+from sklearn.metrics import mean_squared_error as mse
 import pickle
 from influxdb import get_dataframe_from_influxdb, influxdb_post
 from utility import influxdb_forecast_sample, influx_parameters, influxdb_past_sample
@@ -214,10 +216,10 @@ class Forecast:
                 plt.legend(loc='upper left', fontsize=8)
                 plt.show()
         
-        def get_image_result(self, series_list):
+        def get_image_result(self):
 
                 local_predictions = deepcopy(self.predictions)
-                df = pd.concat(series_list, axis=1)
+                df = pd.concat(self.series_list_predicted, axis=1)
                 df.reset_index(inplace=True)
                 df = df.rename(columns = {'ds':'Time'})
 
@@ -328,7 +330,7 @@ class ForecastHandler():
 
                                 
 
-                                # self.images[df.name] = forcast.get_image_result(self.series_list_predicted)
+                                # self.images[df.name] = forcast.get_image_result()
                 return self.prediction_list
 
 
@@ -373,7 +375,7 @@ class ForecastHandler():
                 self.prediction_list = []
 
 
-
+               
 
                 df = pd.concat(self.series_list_predicted, axis=1)
                 df.reset_index(inplace=True)
@@ -413,7 +415,7 @@ class ForecastHandler():
                 print(self.df_concatenated)
                 print("[get_predicted_df][END]PRED==================>")
                 '''
-                
+
                 if self.image_thread.is_alive():
                    self.image_thread.join(0)     
 
@@ -431,17 +433,34 @@ class ForecastHandler():
                         predicted_data = forecast_handler.df_concatenated[["Time", name+"_predicted"]]
 
 
+                        # y_min = min([original_data[name].min(), predicted_data[name+"_predicted"].min()])
+                        # y_max = max([original_data[name].max(), predicted_data[name+"_predicted"].max()])
+
+                        # y_min = int(y_min)
+                        # y_max = int(round(y_max))
                         fig = Figure(figsize=(12,5), dpi=100)
                         ax = fig.subplots()
 
                         original_data = original_data.set_index("Time").squeeze()
                         predicted_data = predicted_data.set_index("Time").squeeze()
-                        
+
+
+                        out_mse=mse(original_data[-forecast_handler.n_predictions::].tolist(),predicted_data[-forecast_handler.n_predictions::].tolist())
+                        out_mse= round(out_mse,4)
+                        print(f"---mse:{name}---") 
+                        print(out_mse)
+                        print(f"---mse:{name}---") 
+                        print()
                         original_data.plot(ax = ax, label='training',color="darkgreen")
                         predicted_data.plot(ax = ax , label='forecast',color='red')
 
                         ax.set_title(f'Forecast vs Actuals: {name}')
+                        ax.text( 0.85, 1, "MSE: "+str(out_mse), horizontalalignment="left", verticalalignment="bottom",size=15, color='black', transform=ax.transAxes)
                         ax.legend(loc='upper left', fontsize=8)
+                        # ax.set_ylim(y_min, y_max)
+                        # y_range = np.arange(y_min, y_max+1)
+                        # y_range = list(y_range)
+                        # ax.set_yticks(y_range)
 
                         buf = BytesIO()
                         fig.savefig(buf, format="png")
