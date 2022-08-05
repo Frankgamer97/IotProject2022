@@ -447,10 +447,12 @@ class ForecastHandler():
 
                         out_mse=mse(original_data[-forecast_handler.n_predictions::].tolist(),predicted_data[-forecast_handler.n_predictions::].tolist())
                         out_mse= round(out_mse,4)
+                        '''
                         print(f"---mse:{name}---") 
                         print(out_mse)
                         print(f"---mse:{name}---") 
                         print()
+                        '''
                         original_data.plot(ax = ax, label='training',color="darkgreen")
                         predicted_data.plot(ax = ax , label='forecast',color='red')
 
