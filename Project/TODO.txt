@@ -1,0 +1,10 @@
+set parameters.html   has &39;
+remove print mse from server
+remove useless redirect from base.html
+test multiple esp32
+test router raspberry
+Grafana
+
+refactoring
+report
+presentazione
