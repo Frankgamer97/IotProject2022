@@ -32,8 +32,8 @@ class TelegramBotHandler():
             self.df["mean"] = self.df["mean"].apply(lambda x: round(x,2))
             self.df["std"] = self.df["std"].apply(lambda x: round(x,2))
 
-            StorageHandler.save_telegrame_bot_image(self.df)
-            self.bot.sendPhoto(chat_id=telegram_chat_id, photo=StorageHandler.load_telegrame_bot_image()) ###########IMPORTANTE
+            # StorageHandler.save_telegrame_bot_image(self.df)
+            # self.bot.sendPhoto(chat_id=telegram_chat_id, photo=StorageHandler.load_telegrame_bot_image()) ###########IMPORTANTE
             print("[TELEGRAM_BOT] POST")
 
 

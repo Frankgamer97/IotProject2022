@@ -54,8 +54,8 @@ bindInterval();
     <hr>  
       <div class="form-group">
         <div class="input-group">
-            <span class="input-group-addon"><b>PROTOCOL</b></span>
-                <select id="selectContainer" class="selectpicker form-control" onchange="selectGraph();"">
+            <span class="input-group-addon"><b></b></span>
+                <select id="selectContainer" class="selectpicker form-control" onchange="selectGraph();">
                   {% for label in data["graphs"] %}
                   <option value="{{ label }}">{{ label }}</option>
                   {% endfor %}

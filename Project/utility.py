@@ -68,6 +68,9 @@ graph_intervall = 2500
 
 ip_userid_dict = {}
 userid_ip_dict = {}
+# userid_gps = {"Pippo Baudo": [40.661,17.695], "Giovanni Mucciacia": [40.662,17.696]}
+userid_gps = {}
+
 
 ip_mac_dict = {}
 ip_config_dict = {}
@@ -294,4 +297,7 @@ def updateConfigProtocol(ip, protocol):
     assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
     assert ip in ip_config_dict.keys()
     ip_config_dict[ip]["protocol"] = protocol
+
+def updateGps(userid, coordinates):
+    userid_gps[userid] = coordinates
     

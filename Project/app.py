@@ -1,4 +1,3 @@
-# from lib2to3.pytree import _Results
 from pdb import post_mortem
 from struct import pack
 from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
@@ -12,7 +11,8 @@ from utility import coap_handler
 from utility import get_time, is_int, get_protocol, get_IP, get_device_time
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
-from utility import post_parameters,jsonpost2pandas
+from utility import updateGps,  jsonpost2pandas
+from utility import post_parameters, userid_gps
 
 from utility import graph_meta, graph_intervall
 from influxdb import send_influxdb
@@ -23,7 +23,7 @@ from arima_model import ForecastHandler
 
 from datetime import datetime
 
-import pybase64
+import pybase64, json
 from io import BytesIO
 from matplotlib.figure import Figure
 
@@ -115,6 +115,8 @@ def updatesensor():
     getConfig(json_data["IP"])
     json_data["DeviceId"] = getDeviceId(json_data["IP"])
     setMac(json_data["IP"], json_data["MAC"])
+
+    updateGps(json_data["DeviceId"], json_data["GPS"])
 
     current_protocol["current_protocol"]= json_data["C_Protocol"]
     updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
@@ -350,12 +352,45 @@ def getGraph():
 
     return image
 
+@app.route("/Map/", methods=['GET'])
+def Map():
+    global userid_gps
+    data = {}
+    
+    
+    data["coordinates"] = userid_gps
+    
+    userid_keys = list(userid_gps.keys())
+    data["users"] = str(userid_keys)
+
+    if len(userid_keys) == 0:
+        data["first_coordinates"] = "[41.890309,12,492510]" 
+    else:
+        data["first_coordinates"] = userid_gps[userid_keys[0]]
+
+    return render_template('maps.html', data = data)
+
+@app.route("/getCoord/", methods=['GET'])
+def getCoord():
+    
+    global userid_gps
+    
+    users = list(userid_gps.keys())
+    for userid in users:
+        # offset = 0.0001
+        # if userid == "Pippo Baudo":
+        #     offset *=5
+        # elif "Esp32" in userid:
+        #     print("sono un ", userid)
+        #     offset = 0
+
+        userid_gps[userid] = [userid_gps[userid][0], userid_gps[userid][1]]
+
+    return userid_gps
+
 @app.route('/aggregation/')
 def aggregation():
     return render_template('aggregation.html')
-
-
-
 
 #GET TABLES AT RUNTIME
 @app.route('/aggregate')
