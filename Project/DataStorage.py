@@ -1,17 +1,10 @@
 from dataframe_image import export as image_export
 
 import os
-import csv
 import pickle
 import pandas as pd
 
-
 class StorageHandler():
-
-
-
-    FORECAST_MODEL_FILE_NAME = "forecast_model.pkl"
-
 
     @staticmethod
     def __load_pickle(file_name: str, folder: str):
@@ -20,7 +13,6 @@ class StorageHandler():
             return None
         with open(file, "rb") as f:
             return pickle.load(f)
-
 
     @staticmethod
     def __save_pickle(obj, file_name: str, folder: str):
@@ -50,8 +42,6 @@ class StorageHandler():
     def __get_project_directory():
         return StorageHandler.__cd_parent(os.path.realpath(__file__))
 
-
-
     @staticmethod
     def __get_tmp_dir():
         return os.path.join(StorageHandler.__get_project_directory(), "tmp")
@@ -64,7 +54,6 @@ class StorageHandler():
     def __get_data_raw_dir():
         return os.path.join(StorageHandler.__get_project_directory(), "data", "raw")
 
-
     @staticmethod
     def create_tmp_directories():
         if not os.path.exists(StorageHandler.__get_tmp_dir()):
@@ -76,7 +65,6 @@ class StorageHandler():
         if not os.path.exists(StorageHandler.__get_data_raw_dir()):
             os.makedirs(StorageHandler.__get_data_raw_dir())
 
-
     @staticmethod
     def save_forecast_model(forecast_model, name="forecast_model"):
         StorageHandler.__save_pickle(forecast_model, name, StorageHandler.__get_forecast_model_dir())
@@ -84,8 +72,6 @@ class StorageHandler():
     @staticmethod
     def load_forecast_model(name="forecast_model"):
         return StorageHandler.__load_pickle(name, StorageHandler.__get_forecast_model_dir())
-
-
 
     @staticmethod
     def save_data_csv(csv_table, col=None,name="csv_name"):
@@ -98,4 +84,3 @@ class StorageHandler():
     @staticmethod
     def load_telegrame_bot_image(name="table.png"):
         return StorageHandler.__load_image(name,StorageHandler.__get_tmp_dir())
-            

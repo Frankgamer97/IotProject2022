@@ -1,34 +1,26 @@
-from datetime import datetime, timezone
 from copy import deepcopy
-from operator import pos
-import ntplib
+from datetime import datetime
 
+import ntplib
 import pytz
-import os
-import socket  
 import pandas as pd
 
-import threading
-# import Queue
-SERVER_MEASUREMENTS = 17
+proxy_data_window = 17
+proxyData = []
 
+ip_dict = {"value": "192.168.4.1"}
 current_protocol = {"current_protocol": "HTTP"}
 
 mqtt_handler = None
 coap_handler = None
 
-# influxdb_measurement="test-august3-1"
-influxdb_forecast_sample = 5
-influxdb_past_sample = 5
+ArimaForecastSample = 5
+ArimaPastSample = 5
 
-influxdb_countupdates = 0
-influxdb_maxupdate = influxdb_forecast_sample
-influxdb_df_post = pd.DataFrame()
+ArimaCountUpdates = 0
+ArimaMaxUpdate = ArimaForecastSample
+ArimaDFPost = pd.DataFrame()
 
-listvalues = []
-
-ip_dict = {"value": "192.168.4.1"}
-#{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
              'user_id':"",
@@ -46,15 +38,10 @@ influx_parameters = {
              'measurement': "test-august6-1"
              }
 
-
-telegram_api_key = "5509057193:AAHxI7t17bDev0WfgA_V_jC9I_ZcgjGxRvw" 
-telegram_chat_id = "-1001781808448"
 telegram_bot_update_frequency = 5
-
-# stat_data_frequency = 5
-# stat_data_delay = 10
 stat_data_timeout = 10
 stat_data_intervall = 20
+
 graph_meta={
     "Delay": {"label": "Seconds", "title": "Average Delay"},
     "Ratio": {"label": "PDR", "title": "Average PDR"},
@@ -68,33 +55,29 @@ graph_intervall = 2500
 
 ip_userid_dict = {}
 userid_ip_dict = {}
+
 # userid_gps = {"Pippo Baudo": [40.661,17.695], "Giovanni Mucciacia": [40.662,17.696]}
 userid_gps = {}
-
 
 ip_mac_dict = {}
 ip_config_dict = {}
 
-# user_mac_dict = {} # "user_id: MAC"
-# user_ip_dict = {} # 'user_id': 'ip'
-
-# mac_user_dict = {} # "MAC: user_id"
-
-# mac_ip_dict = {} # "MAC: IP"
-# ip_configs_dict = {} # "IP: { CONFIGURATION }"
-
-
-# #######devices_config = {}
-
 
 def set_tunable_window(n):
-    SERVER_MEASUREMENTS = n
+    global proxy_data_window
+    proxy_data_window = n
 
+def updateProxyData(json_data):
+    global proxyData, proxy_data_window
+
+    proxyData_len = len(proxyData)
+    if proxyData_len>= proxy_data_window:
+        for i in range(proxyData - proxy_data_window):
+            del proxyData[-1]
+
+    proxyData.insert(0, json_data)
+    
 def get_time():
-
-    #utc_dt = datetime.now(timezone.utc) # UTC time
-    #dt = utc_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
-
     tz = pytz.timezone('UTC')
     return datetime.now(tz)
 
@@ -116,11 +99,6 @@ def get_device_time(dev_time):
     return datetime(year, month, day, hour, minute, second)
     
 def get_IP():
-    #hostname=socket.gethostname()   
-    #IPAddr=socket.gethostbyname(hostname)   
-    #print("Your Computer Name is:"+hostname)   
-    #print("Your Computer IP Address is:"+IPAddr)
-    #return IPAddr
     return ip_dict["value"]
 
 def set_IP(new_ip):
@@ -153,90 +131,19 @@ def jsonpost2pandas(json_data):
     
     json_post = json_post[["Time","Device","GPS","RSSI","Gas","AQI","Temperature","Humidity"]]
 
-    # json_post["Time"] = json_post["Time"].apply(lambda x: x)
-
     return json_post
 
-'''
-def getMac(user_id):
-    return user_mac_dict[user_id]
-
-def getAllDevices():
-    return list(user_mac_dict.keys())
-
-def getDeviceId(mac, ip = None):
-    mac_keys = mac_user_dict.keys()
-    if mac in mac_keys:
-        return mac_user_dict[mac]
-    else:
-        user_id = "Esp32_"+str(len(mac_keys))
-        mac_user_dict[mac] = user_id
-        user_mac_dict[user_id] = mac
-
-        if ip is None:
-            print("[getDeviceId] ERRORE BHOOO")
-        else:
-            mac_ip_dict[mac] = ip
-            user_ip_dict[user_id] = ip
-        return user_id
-
-def getRemoteIp(mac):
-    if mac in mac_ip_dict.keys():
-        return mac_ip_dict[mac]
-    return None
-'''
-
-'''
-def getConfig(ip):
-    if ip not in ip_configs_dict.keys():
-        ip_configs_dict[ip] = deepcopy(post_parameters)
-
-    return ip_configs_dict[ip]
-
-def getConfigByUserId():
-    user_config_dict = {}
-
-    for user, ip in user_ip_dict.items():
-        config = ip_configs_dict[ip]
-        user_config_dict[user] = config
-
-    return user_config_dict
-'''
 def sort_protocol(config, protocol_list):
     ordered = []
-
-    # print()
-    # print("config protocl: ", config["protocol"])
-    # print(type(config["protocol"]))
-    # print()
 
     config_protocol = str(config["protocol"])
     ordered.append(config_protocol)
     
-    # if config_protocol == "0":
-    #     ordered.append("HTTP")
-    # elif config_protocol == "1":
-    #     ordered.append("COAP")
-    # elif config_protocol == "2":
-    #     ordered.append("MQTT")
-    # else:
-    #     print("[sort_protocols] No config protocol found")
-
     for protocol in protocol_list:
         if protocol != ordered[0]:
             ordered.append(protocol)
 
     return ordered
-
-
-
-
-# ip_userid_dict = {}
-# userid_ip_dict = {}
-
-# ip_mac_dict = {}
-# ip_config_dict = {}
-
 
 def getDeviceId(ip):
     ip_keys = ip_userid_dict.keys()
@@ -267,17 +174,13 @@ def getConfig(ip):
         ip_config_dict[ip] = deepcopy(post_parameters)
 
         userid = getDeviceId(ip)
-        # mac = getMac(ip)
-
-        # ip_config_dict[ip]["MAC"] = mac
         ip_config_dict[ip]["user_id"] = userid
 
-    return ip_config_dict[ip]  
-        
+    return ip_config_dict[ip]          
 
 def getFirstConfig():
-
     ip_config_keys = list(ip_config_dict.keys())
+
     if len(ip_config_keys) == 0:
         print("[getFirstConfig] No device found")
         return post_parameters
@@ -296,11 +199,10 @@ def getConfigByUserId():
     return user_config_dict
 
 def updateConfigProtocol(ip, protocol):
-
     assert protocol == "HTTP" or protocol == "COAP" or protocol == "MQTT"
     assert ip in ip_config_dict.keys()
+
     ip_config_dict[ip]["protocol"] = protocol
 
 def updateGps(userid, coordinates):
     userid_gps[userid] = coordinates
-    

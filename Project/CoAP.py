@@ -1,36 +1,24 @@
-import asyncio
-from asyncore import loop
-import aiocoap.resource as resource
-import aiocoap
-import ast
 from threading import Thread
-from utility import SERVER_MEASUREMENTS, current_protocol, influx_parameters, jsonpost2pandas
-from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from influxdb import influxdb_post, send_influxdb
 from datetime import datetime
+from aiocoap import Message, Context, resource, CHANGED
+
+
+from utility import current_protocol, influx_parameters
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac
+from utility import updateProxyData, updateConfigProtocol, get_IP
+from influxdb import send_influxdb
+
+import asyncio
+import ast
 
 class CoapServer(resource.Resource):
 
-    def __init__(self, list_values, bot_handler, arima_handler, aggr_handler):
+    def __init__(self, bot_handler, arima_handler, aggr_handler):
         super(CoapServer, self).__init__()
-        self.list_values = list_values
-        self.startMeasurements = None
         self.bot_handler = bot_handler
         self.arima_handler = arima_handler
         self.aggr_handler = aggr_handler
-    # async def render_get(self, request):
-    #     print("[COAP] GET REQUEST RECEIVED: ")
 
-    #     res = None
-
-    #     if len(self.list_values) > 0:
-    #         res = str(self.list_values[0]).encode("utf-8")
-    #     else:
-    #         res=b"{}"
-
-    #     return aiocoap.Message(code= aiocoap.CONTENT, observe=0, payload=res)
-
-    
     async def render_put(self, request):
         print("[COAP] PUT REQUEST RECEIVED: ")
         try:
@@ -42,7 +30,8 @@ class CoapServer(resource.Resource):
             packet_delay = 0
             
             try:
-                sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
+                # datetime(year, month, day, hour, minute, second)
+                sent_time = get_device_time(json_data["Time"])
                 recv_time = get_ntp_time()
             except:
                 print("[WARNING] NTP SERVER NO RESPONSE")
@@ -52,14 +41,8 @@ class CoapServer(resource.Resource):
                 if sent_time is None:
                     sent_time = recv_time
 
-
-
             current_protocol["current_protocol"]= json_data["C_Protocol"]
             updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
-
-            # sent_time = get_device_time(json_data["Time"])
-            # recv_time = get_ntp_time()
-            # packet_delay = (recv_time - sent_time).seconds
             
             json_data["Delay"] = packet_delay
             json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
@@ -69,11 +52,7 @@ class CoapServer(resource.Resource):
             json_data["DeviceId"] = getDeviceId(json_data["IP"])
             setMac(json_data["IP"], json_data["MAC"])
 
-
-            if len(self.list_values) == SERVER_MEASUREMENTS:
-                del self.list_values[-1]
-
-            self.list_values.insert(0, json_data)
+            updateProxyData(json_data)
             self.aggr_handler.update_pandas()
 
             send_influxdb(json_data, measurement = influx_parameters["measurement"])
@@ -86,45 +65,39 @@ class CoapServer(resource.Resource):
             print(e)
             print()
 
-        return aiocoap.Message(code= aiocoap.CHANGED)
-
-
+        return Message(code = CHANGED)
 
 class CoapHandler:
-    def __init__(self, list_values, bot_handler, arima_handler, aggr_handler, SERVER_IP="192.168.1.", SERVER_PORT=5683, UPDATE_API="update"):
+    SERVER_IP=get_IP()
+    SERVER_PORT = 5683
+    SERVER_UPDATE_API = "update"
 
-        self.SERVER_IP=SERVER_IP
-        self.SERVER_PORT=SERVER_PORT
-        self.UPDATE_API = UPDATE_API
-        self.list_values = list_values
-        self.bot_handler = bot_handler
-        self.arima_handler = arima_handler
-        self.aggr_handler = aggr_handler
+    bot_handler = None
+    arima_handler = None
+    aggr_handler = None
+
+    def __init__(self, bot_handler, arima_handler, aggr_handler):
+        CoapHandler.bot_handler = bot_handler
+        CoapHandler.arima_handler = arima_handler
+        CoapHandler.aggr_handler = aggr_handler
         
         self.coap_thread = Thread(target=CoapHandler.setup_coap, args=(self,))
         self.coap_thread.daemon=True
-
         self.coap_thread.start()
 
-    
     @staticmethod
     def start_coap(self, event_loop):
         root = resource.Site()
-        root.add_resource([self.UPDATE_API], CoapServer(self.list_values, self.bot_handler, self.arima_handler, self.aggr_handler))
+        root.add_resource([CoapHandler.SERVER_UPDATE_API], CoapServer(CoapHandler.bot_handler, CoapHandler.arima_handler, CoapHandler.aggr_handler))
         
-        context = aiocoap.Context.create_server_context(site=root, bind=(self.SERVER_IP, self.SERVER_PORT))
+        context = Context.create_server_context(site=root, bind=(CoapHandler.SERVER_IP, CoapHandler.SERVER_PORT))
         asyncio.Task(context)
 
-        print("[COAP] Server running on (%s, %s)..."%(self.SERVER_IP, self.SERVER_PORT))
+        print("[COAP] Server running on (%s, %s)..."%(CoapHandler.SERVER_IP, CoapHandler.SERVER_PORT))
         event_loop.run_forever()
-        
         
     @staticmethod
     def setup_coap(self):
-
         event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop)
-        
-        # asyncio.run(CoapHandler.start_coap(self))
         CoapHandler.start_coap(self, event_loop)
-        

@@ -1,44 +1,39 @@
 from datetime import datetime
 from threading import Thread
 from paho.mqtt import publish, subscribe
-import ast
 
-from utility import SERVER_MEASUREMENTS
-from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac, updateConfigProtocol
-from utility import current_protocol, influx_parameters, jsonpost2pandas
+from utility import current_protocol, influx_parameters
+
+from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac
+from utility import updateConfigProtocol, updateProxyData
 from influxdb import send_influxdb
 
+import ast
 
 class MqttHandler:
-    list_values = None
-    influxdb_post = None
+    arima_handler = None
     bot_handler = None
     aggr_handler = None
 
-    def __init__(self, list_values, bot_handler, arima_handler ,aggr_handler, server_name="broker.emqx.io", user ="", password ="", topics=["Iot/2022/Project/data", "Iot/2022/Project/config"], qos=1):
-        self.server_name = server_name
-        self.user = user
-        self.password = password
+    server_name="broker.emqx.io"
+    user = ""
+    password = ""
+    auth = {
+            'username': user, 
+            'password': password
+    }
 
-        self.auth = {
-            'username': self.user, 
-            'password': self.password
-            }
+    topics=["Iot/2022/Project/data", "Iot/2022/Project/config"]
+    qos = 1
 
-
-        self.topics = topics
-
-        self.qos=qos # for publish & subscribe
+    def __init__(self, bot_handler, arima_handler ,aggr_handler):
         
-        MqttHandler.list_values = list_values
-
         MqttHandler.bot_handler = bot_handler
-
         MqttHandler.arima_handler = arima_handler
         MqttHandler.aggr_handler = aggr_handler
+        
         self.mqtt_thread = Thread(target=MqttHandler.bind_updating, args=(self,))
         self.mqtt_thread.daemon=True
-
         self.mqtt_thread.start()
 
     @staticmethod
@@ -48,9 +43,6 @@ class MqttHandler:
 
     @staticmethod
     def get_data(client, userdata, message):
-
-        # global current_protocol
-
         print("[MQTT] DATA RECEIVED")
 
         try:
@@ -61,7 +53,8 @@ class MqttHandler:
             packet_delay = 0
             
             try:
-                sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
+                # datetime(year, month, day, hour, minute, second)
+                sent_time = get_device_time(json_data["Time"])
                 recv_time = get_ntp_time()
             except:
                 print("[WARNING] NTP SERVER NO RESPONSE")
@@ -70,10 +63,6 @@ class MqttHandler:
                     recv_time = datetime.now()
                 if sent_time is None:
                     sent_time = recv_time
-
-            # sent_time = get_device_time(json_data["Time"])
-            # recv_time = get_ntp_time()
-            # packet_delay = (recv_time - sent_time).seconds
 
             json_data["Delay"] = packet_delay
             json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
@@ -86,15 +75,13 @@ class MqttHandler:
             current_protocol["current_protocol"] = json_data["C_Protocol"]
             updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
 
-            if len(MqttHandler.list_values) > SERVER_MEASUREMENTS:
-                del MqttHandler.list_values[-1]
-
-            MqttHandler.list_values.insert(0,json_data)
+            updateProxyData(json_data)
             MqttHandler.aggr_handler.update_pandas()
 
             send_influxdb(json_data, measurement = influx_parameters["measurement"])
             MqttHandler.arima_handler.arima_updates()
             MqttHandler.bot_handler.telegram_updates()
+
         except Exception as e:
             print("[MQTT] DATA ERROR")
             print()
@@ -102,7 +89,5 @@ class MqttHandler:
             print()
 
     def update_config(self, params):
-        print("[MQTT] UPDATE CONFIGS")
-        # config = getConfig(request.remote_addr)
-        
-        publish.single(self.topics[1], str(params), qos=self.qos, hostname=self.server_name)
+        print("[MQTT] UPDATE CONFIGS")        
+        publish.single(MqttHandler.topics[1], str(params), qos=MqttHandler.qos, hostname=MqttHandler.server_name)

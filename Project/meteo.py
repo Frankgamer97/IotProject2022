@@ -1,13 +1,11 @@
-from datetime import datetime, timezone
-import matplotlib.pyplot as plt
+from datetime import datetime
 from meteostat import Point, Daily
-from utility import listvalues
+
+from influxdb import influxdb_post
+from ArimaModel import Forecast
+
+import matplotlib.pyplot as plt
 import pandas as pd
-from influxdb import influxdb_post # , get_dataframe_from_influxdb
-from arima_model import Forecast
-
-
-			
 
 class Meteo:
 	def __init__(self,measurement):
@@ -18,13 +16,10 @@ class Meteo:
 		self.location = None
 		self.data = None
 		self.measurement=measurement
+
 	def get_coord(self):
-		if len(listvalues) > 0:
-			self.lat =listvalues[0]["GPS"][0]
-			self.long=listvalues[0]["GPS"][1]		
-		else:
-			print("gps default: Bologna")
-			self.lat, self.long=44.497612, 11.353733
+		print("gps default: Bologna")
+		self.lat, self.long=44.497612, 11.353733
 
 	def set_time(self,start,end):
 		self.start=datetime(start[0],start[1],start[2])
@@ -33,7 +28,6 @@ class Meteo:
 	def set_location(self,height=70):
 		self.get_coord()
 		self.location =  Point(self.lat, self.long, height)
-
 
 	def get_interval_meteo(self,start,end):
 		self.set_time(start,end)
@@ -46,8 +40,7 @@ class Meteo:
 			self.data.plot(y=['tavg', 'tmin', 'tmax'])
 			plt.show()
 		except:
-			print("no data to visualize")
-
+			print("[PLOT DATA] no data to visualize")
 
 	def get_data_raw(self):
 		tavg = self.data.to_dict()["tavg"]
@@ -63,16 +56,12 @@ class Meteo:
 		self.get_interval_meteo(start,end)
 		return self.get_data_raw()
 
-
-
 	def post_data_raw(self, measurement=None):
 		if measurement is not None:
 			self.measurement=measurement
 
 		lista=self.get_data_raw()
-
 		influxdb_post(pd.DataFrame(lista), measurement=self.measurement, tag_col=["GPS"])
-
 
 class MeteoPredictor(Meteo):
 	@staticmethod
@@ -106,48 +95,33 @@ class MeteoPredictor(Meteo):
 	def get_data_pred(self):
 		tavg = MeteoPredictor.series2pd_indexed(self.predictions).to_dict()["Meteostat_Temperature_predicted"]
 		new_data_list = [] 
+
 		for k, v in tavg.items():
 			new_data_list.append({"Time":k,"GPS":[self.lat, self.long],"Temperature_predicted":v})
-			#print(k,v)
-
 		return new_data_list
 
-
-
 	def predict(self,n_periods=365):
-
 		df =self.data.tavg.dropna()
-
 		df_pd = MeteoPredictor.meteo2pd(df)
 		df = MeteoPredictor.pd2series(df_pd,"Meteostat"+"_Temperature")
-
-		# print(df)
-		# print(type(df))
 
 		forcast=Forecast(df)
 		forcast.tuning()
 		forcast.fit(df.name)
 		self.predictions=forcast.forecast(df.name,n_periods)
 		# forcast.plot_forecast() #####IMPORTANTE
-
 		self.predictions.index.name="ds"
-		# print(self.predictions)
+		
 		return self.predictions
 
 	def post_data_pred(self,measurement=None):
 		if measurement is not None:
 			self.measurement=measurement
 		lista=self.get_data_pred()
-		print("GPS")
-		print(lista[0]["GPS"])
 		
 		post_df = pd.DataFrame(lista)
-
 		post_df["Temperature_predicted"] = post_df["Temperature_predicted"].apply(lambda x: round(x,1))
 		influxdb_post(post_df, measurement=self.measurement,tag_col=["GPS"])
-
-
-
 
 if __name__ == '__main__':
 	
