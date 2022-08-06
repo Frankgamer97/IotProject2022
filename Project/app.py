@@ -2,15 +2,14 @@ from flask_bootstrap import Bootstrap
 from flask import Flask, request, abort, flash, jsonify, render_template
 from os import getenv
 
-from argparse import ArgumentParser
 from datetime import datetime
 
 from utility import current_protocol, proxyData, influx_parameters, mqtt_handler
-from utility import coap_handler, graph_meta, graph_intervall, userid_gps, proxy_data_window
-from utility import get_time, is_int, get_IP, set_IP,get_device_time, set_tunable_window 
+from utility import coap_handler, graph_meta, graph_intervall, userid_gps
+from utility import get_time, is_int, get_IP, get_device_time 
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
-from utility import updateGps, updateProxyData
+from utility import updateGps, updateProxyData, acquireInputParameters
 
 from influxdb import send_influxdb
 from Aggregation import Aggregation
@@ -21,7 +20,8 @@ from ArimaModel import ForecastHandler
 from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
-parser=ArgumentParser()
+acquireInputParameters()
+
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
 arima_handler=ForecastHandler(influx_parameters["measurement"])
@@ -61,6 +61,10 @@ def updatesensor():
     try:
         sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
         recv_time = get_ntp_time()
+
+        print("[NTP] SENT: ", sent_time)
+        print("[NTP] RECV: ", recv_time)
+        print("[NTP] DIFF: ", (recv_time - sent_time).total_seconds(), " seconds")
     except:
         print("[WARNING] NTP SERVER NO RESPONSE")
         
@@ -304,26 +308,15 @@ def aggregation():
 def aggregate():
     return render_template('aggregate.html', messages=aggr.build_aggregate())
 
-def buildParser():
-    parser.add_argument("-ip",dest="remote_ip", type=str, default=get_IP())
-    parser.add_argument("-measurement",dest="measurement", type=str, default=influx_parameters["measurement"])
-    parser.add_argument("-data_window",dest="data_window", type=str, default=proxy_data_window)
-
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
 
-    buildParser()
-    args = parser.parse_args()
-    set_IP(args.remote_ip)
-    influx_parameters["measurement"] = args.measurement
-    set_tunable_window(args.data_window)
-
     StorageHandler.create_tmp_directories()
-    ip=get_IP()
 
     mqtt_handler = MqttHandler(bot_handler, arima_handler, aggr)
-    coap_handler = CoapHandler(bot_handler, arima_handler, aggr, SERVER_IP=ip)
-    
+    coap_handler = CoapHandler(bot_handler, arima_handler, aggr)
+
+    ip=get_IP()
     app.run(host=ip,port=5000)
 
     mqtt_handler.mqtt_thread.join(0)

@@ -68,7 +68,7 @@ class CoapServer(resource.Resource):
         return Message(code = CHANGED)
 
 class CoapHandler:
-    SERVER_IP=get_IP()
+    SERVER_IP = None
     SERVER_PORT = 5683
     SERVER_UPDATE_API = "update"
 
@@ -77,6 +77,8 @@ class CoapHandler:
     aggr_handler = None
 
     def __init__(self, bot_handler, arima_handler, aggr_handler):
+        CoapHandler.SERVER_IP = get_IP()
+        
         CoapHandler.bot_handler = bot_handler
         CoapHandler.arima_handler = arima_handler
         CoapHandler.aggr_handler = aggr_handler

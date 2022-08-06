@@ -1,5 +1,6 @@
 from copy import deepcopy
 from datetime import datetime
+from argparse import ArgumentParser
 
 import ntplib
 import pytz
@@ -38,9 +39,7 @@ influx_parameters = {
              'measurement': "test-august6-1"
              }
 
-telegram_bot_update_frequency = 5
-stat_data_timeout = 10
-stat_data_intervall = 20
+telegram_bot_update_frequency = 20
 
 graph_meta={
     "Delay": {"label": "Seconds", "title": "Average Delay"},
@@ -71,8 +70,8 @@ def updateProxyData(json_data):
     global proxyData, proxy_data_window
 
     proxyData_len = len(proxyData)
-    if proxyData_len>= proxy_data_window:
-        for i in range(proxyData - proxy_data_window):
+    if proxyData_len >= proxy_data_window:
+        for _ in range(proxyData_len - proxy_data_window):
             del proxyData[-1]
 
     proxyData.insert(0, json_data)
@@ -84,7 +83,7 @@ def get_time():
 def get_ntp_time():
     ntp_client = ntplib.NTPClient()
     response = ntp_client.request('uk.pool.ntp.org', version=3)
-    return datetime.fromtimestamp(response.tx_time)
+    return datetime.utcfromtimestamp(response.tx_time)
     
 def get_device_time(dev_time):
     # "2022 7 22 00 06 16"
@@ -206,3 +205,18 @@ def updateConfigProtocol(ip, protocol):
 
 def updateGps(userid, coordinates):
     userid_gps[userid] = coordinates
+
+def buildParser():
+    parser=ArgumentParser()
+    parser.add_argument("-ip",dest="remote_ip", type=str, default=get_IP())
+    parser.add_argument("-measurement",dest="measurement", type=str, default=influx_parameters["measurement"])
+    parser.add_argument("-data_window",dest="data_window", type=str, default=proxy_data_window)
+
+    return parser
+
+def acquireInputParameters():
+    parser = buildParser()
+    args = parser.parse_args()
+    set_IP(args.remote_ip)
+    influx_parameters["measurement"] = args.measurement
+    set_tunable_window(args.data_window)

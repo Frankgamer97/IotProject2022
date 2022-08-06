@@ -1,5 +1,3 @@
 test multiple esp32
-
-refactoring
 report
 presentazione

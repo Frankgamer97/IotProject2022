@@ -1,3 +1,4 @@
+from cmath import nan
 from threading import Thread
 from matplotlib.figure import Figure
 from io import BytesIO
@@ -294,8 +295,13 @@ class ForecastHandler():
                         original_data = original_data.set_index("Time").squeeze()
                         predicted_data = predicted_data.set_index("Time").squeeze()
 
-                        out_mse=mse(original_data[-forecast_handler.n_predictions::].tolist(),predicted_data[-forecast_handler.n_predictions::].tolist())
-                        out_mse= round(out_mse,4)
+                        out_mse = "NaN"
+                        try:
+                                out_mse=mse(original_data[-forecast_handler.n_predictions::].tolist(),predicted_data[-forecast_handler.n_predictions::].tolist())
+                                out_mse= round(out_mse,4)
+                                out_mse = str(out_mse)
+                        except:
+                                pass
                         '''
                         print(f"---mse:{name}---") 
                         print(out_mse)
@@ -306,7 +312,7 @@ class ForecastHandler():
                         predicted_data.plot(ax = ax , label='forecast',color='red')
 
                         ax.set_title(f'Forecast vs Actuals: {name}')
-                        ax.text( 0.85, 1, "MSE: "+str(out_mse), horizontalalignment="left", verticalalignment="bottom",size=15, color='black', transform=ax.transAxes)
+                        ax.text( 0.85, 1, "MSE: " + out_mse, horizontalalignment="left", verticalalignment="bottom",size=15, color='black', transform=ax.transAxes)
                         ax.legend(loc='upper left', fontsize=8)
 
                         buf = BytesIO()
@@ -337,7 +343,7 @@ class ForecastHandler():
                         try:
                                 self.send_updates()
                         except Exception as e:
-                                print("Too few observations to estimate starting parameters")
+                                print("[ARIMA] WARNING: too few observations to estimate starting parameters")
                                 # traceback.print_exc()
                 else:
                         self.countupdate += 1
