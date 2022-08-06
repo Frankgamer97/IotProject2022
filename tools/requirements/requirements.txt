@@ -5,13 +5,11 @@ python-telegram-bot
 dataframe-image
 aiocoap
 paho-mqtt
-flask
-flask-bootstrap
+Flask
+Flask-bootstrap
 influxdb-client
 jinja2
 meteostat
 requests
 ntplib
 pybase64
-statsmodels
-pmdarima
