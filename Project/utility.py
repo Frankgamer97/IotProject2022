@@ -27,7 +27,7 @@ influxdb_df_post = pd.DataFrame()
 
 listvalues = []
 
-ip = "192.168.4.1"
+ip_dict = {"value": "192.168.4.1"}
 #{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
@@ -121,7 +121,10 @@ def get_IP():
     #print("Your Computer Name is:"+hostname)   
     #print("Your Computer IP Address is:"+IPAddr)
     #return IPAddr
-    return ip
+    return ip_dict["value"]
+
+def set_IP(new_ip):
+    ip_dict["value"] = new_ip
 
 def is_int(data):
     try:

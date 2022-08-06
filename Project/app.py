@@ -5,10 +5,11 @@ from flask_bootstrap import Bootstrap
 
 from Mqtt import MqttHandler
 from CoAP import CoapHandler
+from argparse import ArgumentParser
 
 from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler 
 from utility import coap_handler
-from utility import get_time, is_int, get_protocol, get_IP, get_device_time
+from utility import get_time, is_int, get_protocol, get_IP, set_IP,get_device_time
 from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
 from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
 from utility import updateGps,  jsonpost2pandas
@@ -29,6 +30,8 @@ from matplotlib.figure import Figure
 
 import os
 import pandas as pd
+
+parser=ArgumentParser()
 
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
@@ -398,8 +401,20 @@ def aggregate():
     #print(aggr.build_aggregate())
     return render_template('aggregate.html', messages=aggr.build_aggregate())
 
+
+def buildParser():
+    parser.add_argument("-ip",dest="remote_ip", type=str, default=get_IP())
+    parser.add_argument("-measurement",dest="measurement", type=str, default=influx_parameters["measurement"])
+
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
+
+    buildParser()
+    args = parser.parse_args()
+    set_IP(args.remote_ip)
+    influx_parameters["measurement"] = args.measurement
+
+
     StorageHandler.create_tmp_directories()
     ip=get_IP()
 

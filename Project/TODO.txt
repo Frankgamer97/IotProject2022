@@ -1,5 +1,4 @@
 test multiple esp32
-test router raspberry
 
 refactoring
 report
