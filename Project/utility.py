@@ -27,7 +27,7 @@ influxdb_df_post = pd.DataFrame()
 
 listvalues = []
 
-ip = "192.168.1.203"
+ip = "192.168.4.1"
 #{"MAC":"","max_gas_value":"10000","min_gas_value":"0","protocol":"0","sample_frequency":"5000","user_id":""}
 post_parameters = {
              'MAC':"",
@@ -43,7 +43,7 @@ influx_parameters = {
              'token': "7pTF08iW5yei6u8-8679-FnOPrLyjuBZm6l9mRbwTZZgwdqyMhjLRYUGm9axjZzVqppnSNU0gCkJ9JlPTUVgag==",
              'bucket': "esp32",
              'server': "https://europe-west1-1.gcp.cloud2.influxdata.com",
-             'measurement': "test-august4-2"
+             'measurement': "test-august6-1"
              }
 
 

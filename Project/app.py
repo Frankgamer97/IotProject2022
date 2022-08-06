@@ -102,7 +102,7 @@ def updatesensor():
             recv_time = datetime.now()
         if sent_time is None:
             sent_time = recv_time
-
+    
     packet_delay = (recv_time - sent_time).total_seconds()
 
     json_data["Delay"] = packet_delay
