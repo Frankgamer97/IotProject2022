@@ -3,7 +3,9 @@
 */
 
 /* LIBRARIES */
-
+#include <Wire.h>
+#include <TinyGPS++.h>
+#include <LiquidCrystal_I2C.h>
 #include <DHT.h>
 #include <WiFi.h>
 #include <PubSubClient.h> //https://github.com/plapointe6/EspMQTTClient
@@ -20,19 +22,29 @@ const char* ntpServer = "uk.pool.ntp.org";
 const long  gmtOffset_sec = 0;//3600;
 const int   daylightOffset_sec = 0;//3600;
 
+float GPS_LAT = 44.497612;
+float GPS_LNG = 11.353733;
+
 /* PARAMETERS */
 #define SERIAL_BAUD_RATE 115200
 #define DHTTYPE DHT22
 
+#define RXD2 16
+#define TXD2 17
+#define GPS_TIMEOUT 10000
 #define DHTPIN 15
 #define MQ2PIN 34
 
 #define AQInum 5
-
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "JeepMobile";//"22lr";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
-const char password[] = "@dQmBvxoNRiINTG@1LxZ5JshRz@";//"raspberry123";//"ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
+const char ssid[] = "JeepMobile";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
+const char password[] = "@dQmBvxoNRiINTG@1LxZ5JshRz@";//"ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
+
+LiquidCrystal_I2C lcd(0x27, 16,2);
+
+HardwareSerial neogps(1);
+TinyGPSPlus gps;
 
 /* MQTT broker configuration*/
 const char* MQTT_SERVER="broker.emqx.io";
@@ -68,7 +80,7 @@ float max_gas_value = 100;
 float temperature = 0;
 float humidity = 0;
 float gas = 0;
-float gps = 0;
+//float gps = 0;
 float rssi = 0;
 
 String protocol = "HTTP"; /* {0: http, 1: coap, 2: mqtt */
@@ -111,6 +123,10 @@ String getMonth(String month){
   return "12";
   
  return "-1";
+}
+
+float myround(float num, int places){
+  return String(num,places).toFloat();
 }
 
 String getTime(){
@@ -156,11 +172,45 @@ String getProtocol(){
   return protocol;
 }
 
+/*
 float getGPS(int coord){
   if (coord == 0)
     return 44.083626;
   return 12.534610;
 }
+*/
+
+void updateGPS(){
+  boolean new_data = false;
+  unsigned long start_while = millis();
+  
+  while (neogps.available() && start_while - millis() < GPS_TIMEOUT){
+      if (gps.encode(neogps.read())){
+        new_data = true;
+        break;
+      }
+  }
+  
+  if(new_data == true){
+    if(gps.location.isValid() == 1){
+      GPS_LAT = myround(gps.location.lat(),3);
+      GPS_LNG = myround(gps.location.lng(),3);
+      //GPS_LAT = gps.location.lat();
+      //GPS_LNG = gps.location.lng();
+      
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print(GPS_LAT, 3);
+      lcd.setCursor(0,1);
+      lcd.print(GPS_LNG, 3);  
+    }
+    else
+      Serial.println("[GPS] NO VALID DATA");
+  }
+  else
+    Serial.println("[GPS] NO DATA");
+}
+
 
 float getRSSI(){
   rssi = WiFi.RSSI();
@@ -193,7 +243,27 @@ int getAQI(){
   else
     return 2;
 }
+/* DISPLAY CONFIG*/
+void  DisplayConfiguration () {
+  lcd.begin(); 
+  lcd.backlight(); 
+  //lcd.print("ARA ARA...");
+}
 
+void display_data(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(user_id.c_str());
+  lcd.setCursor(0,1);
+  // We write the number of seconds elapsed 
+  lcd.print(temperature);
+  lcd.print("\xDF");
+  lcd.print("C ");
+  lcd.print(humidity);
+  lcd.print("% ");
+  //lcd.print(gas);
+
+}
 /* CONNECTIONS */
 
 void WifiConnection(){
@@ -351,8 +421,15 @@ String getJson()
         DynamicJsonBuffer jsonBuffer;
         JsonObject &root = jsonBuffer.createObject();
         JsonArray &gps_coord = root.createNestedArray("GPS");
-        gps_coord.add(getGPS(0));
-        gps_coord.add(getGPS(1));
+
+        /*
+        float lat;
+        float lng;
+        */
+        updateGPS();
+        
+        gps_coord.add(GPS_LAT);
+        gps_coord.add(GPS_LNG);
         //root["GPS"] = getGPS();
         root["RSSI"] = getRSSI();
         root["Temperature"] = getTemperature();
@@ -366,6 +443,8 @@ String getJson()
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
+        
+        //display_data();
         return json_str;
 }
 
@@ -410,7 +489,11 @@ void setup() {
   Serial.begin(SERIAL_BAUD_RATE);
   dht.begin();
   pinMode(MQ2PIN,INPUT);
+  DisplayConfiguration ();
   WifiConnection();
+
+  neogps.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  
   if(protocol == (String)"MQTT")
     MqttConfiguration();
   else if(protocol == (String)"COAP")
