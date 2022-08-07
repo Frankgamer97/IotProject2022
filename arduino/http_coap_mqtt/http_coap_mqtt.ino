@@ -22,6 +22,9 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
 
+float GPS_LAT = 44.083626;
+float GPS_LNG = 12.534610;
+
 /* PARAMETERS */
 #define SERIAL_BAUD_RATE 115200
 #define DHTTYPE DHT22
@@ -29,9 +32,6 @@ const int   daylightOffset_sec = 3600;
 #define RXD2 16
 #define TXD2 17
 #define GPS_TIMEOUT 10000
-#define GPS_DEFAULT_LAT 44.083626
-#define GPS_DEFAULT_LNG 12.534610
-
 #define DHTPIN 15
 #define MQ2PIN 34
 
@@ -125,6 +125,10 @@ String getMonth(String month){
  return "-1";
 }
 
+float myround(float num, int places){
+  return String(num,places).toFloat();
+}
+
 String getTime(){
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo))
@@ -176,7 +180,7 @@ float getGPS(int coord){
 }
 */
 
-void getGPS(float* lat, float* lng){
+void updateGPS(){
   boolean new_data = false;
   unsigned long start_while = millis();
   
@@ -189,29 +193,22 @@ void getGPS(float* lat, float* lng){
   
   if(new_data == true){
     if(gps.location.isValid() == 1){
-      *lat = gps.location.lat();
-      *lng = gps.location.lng();
+      GPS_LAT = myround(gps.location.lat(),3);
+      GPS_LNG = myround(gps.location.lng(),3);
+      //GPS_LAT = gps.location.lat();
+      //GPS_LNG = gps.location.lng();
+      
       lcd.clear();
       lcd.setCursor(0,0);
-      lcd.print(*lat, 6);
+      lcd.print(GPS_LAT, 3);
       lcd.setCursor(0,1);
-      lcd.print(*lng, 6);
-      
-      //return coord == 0? gps.location.lat(): gps.location.lng();
+      lcd.print(GPS_LNG, 3);  
     }
-    else{
+    else
       Serial.println("[GPS] NO VALID DATA");
-      *lat = GPS_DEFAULT_LAT;
-      *lng = GPS_DEFAULT_LNG;
-    }
   }
-  else{
-    Serial.println("[GPS] NO DATA");   
-    *lat = GPS_DEFAULT_LAT;
-    *lng = GPS_DEFAULT_LNG;
-  } 
-
-  //return coord == 0? GPS_DEFAULT_LAT: GPS_DEFAULT_LNG;
+  else
+    Serial.println("[GPS] NO DATA");
 }
 
 
@@ -425,13 +422,14 @@ String getJson()
         JsonObject &root = jsonBuffer.createObject();
         JsonArray &gps_coord = root.createNestedArray("GPS");
 
+        /*
         float lat;
         float lng;
-
-        getGPS(&lat,&lng);
+        */
+        updateGPS();
         
-        gps_coord.add(lat);
-        gps_coord.add(lng);
+        gps_coord.add(GPS_LAT);
+        gps_coord.add(GPS_LNG);
         //root["GPS"] = getGPS();
         root["RSSI"] = getRSSI();
         root["Temperature"] = getTemperature();
