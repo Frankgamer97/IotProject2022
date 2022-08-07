@@ -1,3 +1,5 @@
+from gc import callbacks
+from time import sleep
 from flask_bootstrap import Bootstrap
 from flask import Flask, request, abort, flash, jsonify, render_template
 from os import getenv
@@ -61,10 +63,6 @@ def updatesensor():
     try:
         sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
         recv_time = get_ntp_time()
-
-        print("[NTP] SENT: ", sent_time)
-        print("[NTP] RECV: ", recv_time)
-        print("[NTP] DIFF: ", (recv_time - sent_time).total_seconds(), " seconds")
     except:
         print("[WARNING] NTP SERVER NO RESPONSE")
         
@@ -83,6 +81,8 @@ def updatesensor():
     json_data["DeviceId"] = getDeviceId(json_data["IP"])
     setMac(json_data["IP"], json_data["MAC"])
 
+    json_data["GPS"] = [ round(x,3) for x in json_data["GPS"]]
+
     updateGps(json_data["DeviceId"], json_data["GPS"])
 
     current_protocol["current_protocol"]= json_data["C_Protocol"]
@@ -92,8 +92,16 @@ def updatesensor():
     aggr.update_pandas()
 
     send_influxdb(json_data, measurement = influx_parameters["measurement"])
+
     arima_handler.arima_updates()
     bot_handler.telegram_updates()
+    
+    # momo = datetime.now()
+    # print("I am waiting")
+    # while True:
+    #     momo2 = datetime.now()
+    #     if (momo2 - momo).total_seconds() >=3:
+    #         break
     return "ok"
 
 #esp32 take values from the json post_parameters

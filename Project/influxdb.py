@@ -1,3 +1,4 @@
+from functools import cache
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -19,6 +20,7 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
  
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
+    print("[InfluxDbPost] Data to Post")
     print(json_data)
 
     json_data.dropna(inplace = True)
@@ -28,7 +30,6 @@ def influxdb_post(json_data, measurement="",tag_col=[],time_col ="Time"):
     else:
         # pass
         write_api.write(bucket=bucket, org=user, record=json_data,data_frame_measurement_name=measurement,data_frame_tag_columns=tag_col,data_frame_timestamp_column=time_col)
-    
     return "ok"
 
 def influxdb_query(measurement=""):
@@ -56,10 +57,11 @@ def influxdb_query(measurement=""):
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value" )\
     |> keep(columns: ["Device", "GPS","_time","Temperature_predicted","Humidity_predicted","Gas_predicted"])'
 
-    #print(query)
+
 
     tables_real_data = query_api.query_data_frame(query=query_real_data, org=user)
     tables_predicted_data = query_api.query_data_frame(query=query_predicted_data, org=user)
+
 
     # try:
     #     StorageHandler().save_data_csv(tables_real_data, ["Device", "GPS", "RSSI" ,"Temperature",  "Humidity", "Gas","AQI","_time"] ,measurement)

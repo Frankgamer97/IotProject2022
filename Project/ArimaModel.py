@@ -99,6 +99,12 @@ class Forecast:
                         self.fitted_model=pm.arima.ARIMA(order=self.mparima_dict[model_name]["order"], seasonal_order=self.mparima_dict[model_name]["seasonal_order"], start_params=None,
                          method='lbfgs', maxiter=50, suppress_warnings=True, out_of_sample_size=0, 
                          scoring='mse', scoring_args=None, trend=None, with_intercept=True)
+                        
+                        # print("ORDER=======================")
+                        # print(self.mparima_dict[model_name]["order"])
+                        # print("SEASON=====================")
+                        # print(self.mparima_dict[model_name]["seasonal_order"])
+
                         self.fitted_model.fit(self.mparima_dict[model_name]["y_prime"])  
                 
         def forecast(self,model_name,n_periods,freq="D"):
@@ -122,6 +128,8 @@ class Forecast:
                         except Exception as e:
                                 fc = [np.nan] * n_periods if n_periods > 1 else np.nan
                         
+          
+                        
                         last_rev=self.df.index[-1]
 
                         date_range= pd.date_range(last_rev,periods=n_periods+1, freq=freq) [1::]
@@ -141,44 +149,6 @@ class Forecast:
                 plt.legend(loc='upper left', fontsize=8)
                 plt.show()
         
-        def get_image_result(self):
-                local_predictions = deepcopy(self.predictions)
-                df = pd.concat(self.series_list_predicted, axis=1)
-                df.reset_index(inplace=True)
-                df = df.rename(columns = {'ds':'Time'})
-
-                if self.df_original.name+"_predicted" in df.columns:
-                        df = df[["Time",self.df_original.name+"_predicted"]]
-                        df = df.set_index("Time")
-                        df = df.squeeze()
-                        
-                        local_predictions.name = self.df_original.name+"_predicted"
-                        self.concatenated_prediction= pd.concat([df,local_predictions])
-                else:
-                        self.concatenated_prediction = local_predictions        
-
-                self.concatenated_prediction = self.concatenated_prediction.apply(lambda sorata: round(sorata,1))
-                
-                fig = Figure(figsize=(12,5), dpi=100)
-                
-                ax = fig.subplots()
-
-                self.df_original = self.df_original.rename(index="Time")
-                self.concatenated_prediction = self.concatenated_prediction.rename(index="Time")
-
-                self.df_original.plot(ax = ax, label='training',color="darkgreen")
-                self.concatenated_prediction.plot(ax = ax , label='forecast',color='red')
-
-                ax.set_title(f'Forecast vs Actuals: {self.df_original.name}')
-                ax.legend(loc='upper left', fontsize=8)
-
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data = pybase64.b64encode(buf.getbuffer()).decode("ascii")
-                buf.seek(0)
-                
-                return f"data:image/png;base64,{data}"
-
 class ForecastHandler():
         def __init__(self,measurement=influx_parameters["measurement"],n_periods=ArimaForecastSample,maxupdate=ArimaForecastSample):
                 self.countupdate= 0
@@ -186,7 +156,7 @@ class ForecastHandler():
                 self.prediction_list=[]
                 self.df_predicted = None
                 self.measurement=measurement
-                self.n_predictions=n_periods # quanti ne predico
+                self.n_predictions= n_periods # quanti ne predico
 
                 self.pred = {}
                 self.images = {
@@ -202,7 +172,11 @@ class ForecastHandler():
                 
                 index_range=df.index.strftime("%Y-%m-%d %H:%M:%S") 
                 didx=pd.DatetimeIndex(index_range)
-                n_period=p     # didx.shape[0]
+                n_period=min(p, df.shape[0]) - 1    # didx.shape[0]
+
+                if n_period < 0:
+                        n_period = 1
+
                 if n_period!=0:
                         diff=0
                         for i in range(n_period):
@@ -217,6 +191,7 @@ class ForecastHandler():
                 
           
         def get_predictions_list(self):
+                self.prediction_list =[]
                 for df in self.series_list_real:
                         if "Device" in df.name or "GPS" in df.name:
                                 pass # print(f"{df.name} is not to predict")
@@ -226,15 +201,21 @@ class ForecastHandler():
                                 forcast.fit(df.name)
                               
                                 self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))
-                                self.prediction_list.append(self.predictions)
+ 
+                                self.prediction_list.append(deepcopy(self.predictions))
                                 self.pred[df.name] = self.predictions
 
-                return self.prediction_list
+
+
 
         def get_predicted_df(self):
                 self.series_list_real, self.series_list_predicted=get_dataframe_from_influxdb(self.measurement)
+                # If the dataframe on influx contains less then 20 rows, pdmarima is not able to predict correclty
+                if self.series_list_real[0].shape[0] <=20: 
+                        self.df_predicted=pd.DataFrame()
+                        return self.df_predicted
                 self.get_predictions_list()
-                                
+            
                 df_device={}
                 for df in self.series_list_real:
                         if "Device" in df.name:
@@ -245,12 +226,15 @@ class ForecastHandler():
                         if "GPS" in df.name:
                               df_gps=df
 
-                df_device_predictions=pd.Series(list(df_device[0:self.n_predictions]), index=self.prediction_list[0].index).rename(df_device.name)
-                df_gps_predictions=pd.Series(list(df_gps[0:self.n_predictions]), index=self.prediction_list[0].index).rename(df_gps.name)
+                self.n_predictions = min(ArimaForecastSample, df_device.shape[0],self.prediction_list[0].index.shape[0])
+                df_device_predictions=pd.Series(list(df_device[0:self.n_predictions]), index=self.prediction_list[0].index[0:self.n_predictions]).rename(df_device.name)
+                df_gps_predictions=pd.Series(list(df_gps[0:self.n_predictions]), index=self.prediction_list[0].index[0:self.n_predictions]).rename(df_gps.name)
                 
-                self.df_predicted=pd.concat([df_device_predictions,df_gps_predictions,self.prediction_list[0],self.prediction_list[1],self.prediction_list[2]],axis=1)
+                self.df_predicted=pd.concat([df_device_predictions[0:self.n_predictions],df_gps_predictions[0:self.n_predictions],self.prediction_list[0][0:self.n_predictions],self.prediction_list[1][0:self.n_predictions],self.prediction_list[2][0:self.n_predictions]],axis=1)
                 self.df_predicted.reset_index(inplace=True)
                 self.df_predicted = self.df_predicted.rename(columns = {'index':'Time'})
+
+      
                 self.df_predicted["Gas_predicted"] = self.df_predicted["Gas_predicted"].apply(lambda x: int(x) if int(x) >= 0 else 0)
                 self.df_predicted["Humidity_predicted"] = self.df_predicted["Humidity_predicted"].apply(lambda x: round(x,1))
                 self.df_predicted["Temperature_predicted"] = self.df_predicted["Temperature_predicted"].apply(lambda x: round(x,1)) 
@@ -344,7 +328,7 @@ class ForecastHandler():
                                 self.send_updates()
                         except Exception as e:
                                 print("[ARIMA] WARNING: too few observations to estimate starting parameters")
-                                # traceback.print_exc()
+                                traceback.print_exc()
                 else:
                         self.countupdate += 1
 
