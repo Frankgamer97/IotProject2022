@@ -275,7 +275,7 @@ def getGraph():
     return image
 
 @app.route("/map/", methods=['GET'])
-def Map():
+def map():
     global userid_gps
     data = {}
     

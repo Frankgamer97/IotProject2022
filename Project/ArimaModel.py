@@ -123,12 +123,11 @@ class Forecast:
                         self.predictions = pd.Series(list(fc), index=date_forcasted).rename(self.df.name+"_predicted")
                 else:
                         try:
-                                fc = self.fitted_model.predict(n_periods=n_periods)
+                                fc, self.conf_int = self.fitted_model.predict(n_periods=n_periods, return_conf_int=True, alpha = 0.05)
 
                         except Exception as e:
                                 fc = [np.nan] * n_periods if n_periods > 1 else np.nan
-                        
-          
+                                self.conf_int = np.zeros((n_periods,2))
                         
                         last_rev=self.df.index[-1]
 
@@ -158,7 +157,11 @@ class ForecastHandler():
                 self.measurement=measurement
                 self.n_predictions= n_periods # quanti ne predico
 
-                self.pred = {}
+                self.conf_int = {
+                        "Temperature": "",
+                        "Gas": "",
+                        "Humidity": ""
+                }
                 self.images = {
                         "Temperature": "",
                         "Gas": "",
@@ -201,12 +204,9 @@ class ForecastHandler():
                                 forcast.fit(df.name)
                               
                                 self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))
-                                self.conf_int=forcast.fitted_model.conf_int(alpha=0.05)
-                                print("DIO PORCO")
-                                print(self.conf_int)
+                                self.conf_int[df.name]=forcast.conf_int
  
                                 self.prediction_list.append(deepcopy(self.predictions))
-                                self.pred[df.name] = self.predictions
 
 
 
@@ -292,15 +292,17 @@ class ForecastHandler():
                                 pass
 
 
-                        out_conf_int=forecast_handler.conf_int
-                        '''
+                        out_conf_int=forecast_handler.conf_int[name]
+                        print()
                         print(f"---mse:{name}---") 
                         print(out_mse)
                         print(f"---mse:{name}---") 
                         print()
-                        '''
                         
+                        print()
                         print(f"---confidence interval:{name}---") 
+                        print(type(out_conf_int))
+                        print(out_conf_int.shape)
                         print(out_conf_int)
                         print(f"---confidence interval:{name}---") 
                         print()
@@ -311,6 +313,11 @@ class ForecastHandler():
                         ax.set_title(f'Forecast vs Actuals: {name}')
                         ax.text( 0.85, 1, "MSE: " + out_mse, horizontalalignment="left", verticalalignment="bottom",size=15, color='black', transform=ax.transAxes)
                         ax.legend(loc='upper left', fontsize=8)
+
+                        
+                        lower_series = pd.Series(out_conf_int[:,0], index=predicted_data.index[-5:])
+                        upper_series = pd.Series(out_conf_int[:,1], index=predicted_data.index[-5:])
+                        ax.fill_between(lower_series.index, lower_series, upper_series, color = "lightblue", alpha = 0.55)
 
                         buf = BytesIO()
                         fig.savefig(buf, format="png")
@@ -341,7 +348,7 @@ class ForecastHandler():
                                 self.send_updates()
                         except Exception as e:
                                 print("[ARIMA] WARNING: too few observations to estimate starting parameters")
-                                traceback.print_exc()
+                                # traceback.print_exc()
                 else:
                         self.countupdate += 1
 
