@@ -10,6 +10,7 @@ from utility import proxyData
 
 import pandas as pd
 import pybase64
+import numpy as np
 
 class Aggregation:
 
@@ -94,6 +95,19 @@ class Aggregation:
 			return 0.0
 
 	
+	def get_last_pdr(self, protocol):
+		try:
+			protocol_df = self.df_total[self.df_total["C_Protocol"] == protocol].reset_index()
+			return protocol_df["PDR"][0]
+		except:
+			return -1
+		
+
+	def get_pdr_among_protocols(self):
+		protocols = ["HTTP", "COAP", "MQTT"]
+		pdrs = [self.get_last_pdr(protocol) for protocol in protocols if self.get_last_pdr(protocol) >= 0]
+
+		return max(pdrs), max(pdrs), mean(pdrs), np.array(pdrs).std()
 
 	def build_aggregate(self):
 		self.update_pandas()
@@ -102,6 +116,8 @@ class Aggregation:
 		min = self.get_min()
 		mean = self.get_mean()
 		std = self.get_std()
+
+		max["PDR"], min["PDR"], mean["PDR"], std["PDR"] = self.get_pdr_among_protocols()
 
 		if not self.df.empty:
 			return {"max":max, "min":min, "mean":mean, "std":std}
