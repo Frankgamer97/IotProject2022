@@ -10,6 +10,7 @@ from influxdb import send_influxdb
 
 import asyncio
 import ast
+import traceback
 
 class CoapServer(resource.Resource):
 
@@ -38,7 +39,7 @@ class CoapServer(resource.Resource):
                 print("[WARNING] NTP SERVER NO RESPONSE")
             
             json_data["Delay"] = packet_delay
-            json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
+            # json_data["PDR"] = self.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
             json_data["Time"] = get_time()
 
             getConfig(json_data["IP"])
@@ -63,6 +64,7 @@ class CoapServer(resource.Resource):
             print("[COAP] PUT REQUEST ERROR")
             print()
             print(e)
+            # traceback.print_exc()
             print()
 
         return Message(code = CHANGED)

@@ -16,15 +16,6 @@
 #include <MeanFilterLib.h> //https://github.com/luisllamasbinaburo/Arduino-Meanfilter
 //#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
 #include "Time.h"
-
-String user_id = "";
-const char* ntpServer = "uk.pool.ntp.org";
-const long  gmtOffset_sec = 0;//3600;
-const int   daylightOffset_sec = 0;//3600;
-
-float GPS_LAT = 44.488;
-float GPS_LNG = 11.330;
-
 /* PARAMETERS */
 #define SERIAL_BAUD_RATE 115200
 #define DHTTYPE DHT22
@@ -36,6 +27,24 @@ float GPS_LNG = 11.330;
 #define MQ2PIN 34
 
 #define AQInum 5
+
+String user_id = "";
+const char* ntpServer = "uk.pool.ntp.org";
+const long  gmtOffset_sec = 0;//3600;
+const int   daylightOffset_sec = 0;//3600;
+
+float GPS_LAT = 44.488;
+float GPS_LNG = 11.330;
+
+int http_total_packets = 0;
+int http_sent_packets = 0;
+
+int coap_total_packets = 0;
+int coap_sent_packets = 0;
+
+int mqtt_total_packets = 0;
+int mqtt_sent_packets = 0;
+
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
 const char ssid[] = "JeepMobile";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
@@ -161,6 +170,17 @@ String getTime(){
   return "";
 }
 
+float getPDR(){
+  if(protocol == String("HTTP"))
+    return http_sent_packets >= 0 && http_total_packets > 0?((float)http_sent_packets) / http_total_packets:0 ;
+  if(protocol == String("COAP"))
+    return coap_sent_packets >= 0 && coap_total_packets > 0?((float)coap_sent_packets) / coap_total_packets:0;
+  if(protocol == String("MQTT"))
+    return mqtt_sent_packets >= 0 && mqtt_total_packets > 0?((float)mqtt_sent_packets) / mqtt_total_packets:0;
+
+  return -1;
+}
+
 String getProtocol(){
   /*if(protocol == 0)
     return "HTTP";
@@ -256,13 +276,6 @@ void displayInfo(){
   lcd.setCursor(0,0);
   lcd.print(user_id);
   lcd.setCursor(0,1);
-
-  Serial.println("GANDALF E SILENTE MAGICI AMICI");
-  Serial.println(GPS_LAT);
-  Serial.println(String(GPS_LAT).c_str());
-  Serial.println(GPS_LNG);
-  Serial.println(String(GPS_LNG).c_str());
-  Serial.println("GANDALF E SILENTE MAGICI AMICI");
   
   lcd.print(GPS_LAT,3);
   lcd.print("   ");
@@ -331,7 +344,13 @@ boolean MqttPublishData(const char* topic, String value) {
   if (!conn) 
     MqttConnect();
   const char* payload=value.c_str();
-  return clientMQTT.publish(topic,payload);
+
+  boolean result = clientMQTT.publish(topic,payload);
+  
+  if(result == true)
+    mqtt_sent_packets = mqtt_sent_packets + 1;
+  
+  return result;
 }
 
 void MqttConfiguration(){
@@ -357,7 +376,7 @@ void callback_response(CoapPacket &packet, IPAddress ip, int port){
   char p[packet.payloadlen + 1];
   memcpy(p, packet.payload, packet.payloadlen);
   p[packet.payloadlen] = NULL;
-      
+  coap_sent_packets = coap_sent_packets + 1;
   Serial.println(p);
 }
 
@@ -425,7 +444,6 @@ String getJson()
         DynamicJsonBuffer jsonBuffer;
         JsonObject &root = jsonBuffer.createObject();
         JsonArray &gps_coord = root.createNestedArray("GPS");
-
         /*
         float lat;
         float lng;
@@ -445,6 +463,7 @@ String getJson()
         root["C_Protocol"] = getProtocol();
         root["Time"] = getTime();
         root["IP"] =  WiFi.localIP().toString();
+        root["PDR"] = getPDR();
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
@@ -475,6 +494,9 @@ void HTTPost(const char* serverName, String json_output){
         // If you need an HTTP request with a content type: application/json, use the following:
         http.addHeader("Content-Type", "application/json");
         int httpResponseCode = http.POST(json_output);
+
+        if(httpResponseCode >= 200 && httpResponseCode <= 299) 
+          http_sent_packets = http_sent_packets +1;
 
         Serial.print("[HTTP] Response code: ");
         Serial.println(httpResponseCode);
@@ -520,7 +542,10 @@ void loop() {
         Serial.println("Using HTTP");
         String page = "";
         page = setParametersFromServer(serverNameGet);
+        
+        
         HTTPost(serverNamePost,getJson());
+        http_total_packets = http_total_packets +1;
       }
       else if (protocol==(String)"COAP")
       {
@@ -532,8 +557,9 @@ void loop() {
         
         if(!Coap_Config)
           CoapConfiguration();
-       
+          
         coap.put(COAP_SERVER, COAP_PORT, update_api, getJson().c_str());
+        coap_total_packets = coap_total_packets +1;
       }      
       else if (protocol==(String)"MQTT")
       {
@@ -541,8 +567,10 @@ void loop() {
         Serial.println("Using Mqtt");
         if(!MqttConfig)
           MqttConfiguration();
+
         
         boolean published_data = MqttPublishData(data_topic,getJson());
+        mqtt_total_packets = mqtt_total_packets +1;
         Serial.print("[MQTT] Data published: ");
         Serial.println(published_data);
       }

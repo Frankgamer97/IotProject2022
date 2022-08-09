@@ -293,6 +293,7 @@ class ForecastHandler():
 
 
                         out_conf_int=forecast_handler.conf_int[name]
+                        '''
                         print()
                         print(f"---mse:{name}---") 
                         print(out_mse)
@@ -301,11 +302,10 @@ class ForecastHandler():
                         
                         print()
                         print(f"---confidence interval:{name}---") 
-                        print(type(out_conf_int))
-                        print(out_conf_int.shape)
                         print(out_conf_int)
                         print(f"---confidence interval:{name}---") 
                         print()
+                        '''
                         
                         original_data.plot(ax = ax, label='training',color="darkgreen")
                         predicted_data.plot(ax = ax , label='forecast',color='red')

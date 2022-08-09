@@ -125,7 +125,7 @@ class MeteoPredictor(Meteo):
 
 if __name__ == '__main__':
 	
-	meteor = MeteoPredictor(measurement="testFinal6-meteostat")
+	meteor = MeteoPredictor(measurement="meteostat-FinalTest")
 	meteor.build_dataframe(start=(2020, 12, 1),end=(2022, 7, 1))
 	meteor.post_data_raw()
 	meteor.predict()

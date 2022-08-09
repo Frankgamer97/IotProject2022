@@ -69,7 +69,7 @@ def updatesensor():
     
 
     json_data["Delay"] = packet_delay
-    json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
+    # json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
     json_data["Time"] = get_time()
     
     getConfig(json_data["IP"])
@@ -262,7 +262,7 @@ def getGraph():
     global aggr
     graph =request.args.get('graph')
     
-    if graph == "Delay" or graph == "Ratio":
+    if graph == "Delay" or graph == "PDR" or graph == "PPR":
         image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
 
     elif "Arima" in graph:

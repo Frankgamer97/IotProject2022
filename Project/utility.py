@@ -43,7 +43,8 @@ telegram_bot_update_frequency = 20
 
 graph_meta={
     "Delay": {"label": "Seconds", "title": "Average Delay"},
-    "Ratio": {"label": "PDR", "title": "Average PDR"},
+    "PDR": {"label": "PDR", "title": "PDR"},
+    "PPR": {"label": "PPR", "title": "PPR"},
 
     "Arima Temperature": {"title": "Forecast Temperature"},
     "Arima Humidity": {"title": "Forecast Humidity"},

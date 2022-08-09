@@ -61,7 +61,7 @@ class MqttHandler:
                 print("[WARNING] NTP SERVER NO RESPONSE")
                 
             json_data["Delay"] = packet_delay
-            json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
+            # json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
             json_data["Time"] = get_time()
 
             getConfig(json_data["IP"])

@@ -2,6 +2,7 @@
 # as the maximum, minimum, average and standard deviation, computed
 # every n observations.
 
+from statistics import mean
 from matplotlib.figure import Figure
 from io import BytesIO
 
@@ -57,7 +58,7 @@ class Aggregation:
 		mean = self.df_total[self.df_total["C_Protocol"] == protocol]["Delay"].mean()
 		return mean if str(mean) != "nan" else 0
 
-	def get_packet_delivery_ratio(self,protocol):
+	def get_packet_protocol_ratio(self,protocol):
 		try:
 			count_value = self.df_total[self.df_total["C_Protocol"] == protocol]["C_Protocol"].count()
 
@@ -71,6 +72,28 @@ class Aggregation:
 
 		except:
 			return 0.0
+
+	def get_packet_delivery_ratio(self,protocol):
+		try:
+			protocol_df = self.df_total[self.df_total["C_Protocol"] == protocol].reset_index() 
+			packets = protocol_df["C_Protocol"].count()
+
+			if packets > 0:
+				return protocol_df["PDR"][0]
+			else:
+				return 0.0 
+			# packets = count_value
+			# total = self.df_total["C_Protocol"].count()
+
+			# if total == 0:
+			# 	return 0.0
+			
+			# return packets / total
+
+		except:
+			return 0.0
+
+	
 
 	def build_aggregate(self):
 		self.update_pandas()
@@ -96,8 +119,10 @@ class Aggregation:
 
 			if graph == "Delay":
 				get_graph_data = self.get_protocol_delay
-			elif graph == "Ratio":
+			elif graph == "PDR":
 				get_graph_data = self.get_packet_delivery_ratio
+			elif graph == "PPR":
+				get_graph_data = self.get_packet_protocol_ratio
 			else:
 				get_graph_data = self.get_protocol_delay
 
@@ -107,7 +132,7 @@ class Aggregation:
 		ax = fig.subplots()
 		
 		barlist = ax.bar(protocols, means,width = 0.4)
-		if graph == "Ratio":
+		if graph == "PPR" or graph == "PDR":
 			ax.set_ylim(0.0, 1.0)
 		barlist[0].set_color('r')
 		barlist[1].set_color('g')
