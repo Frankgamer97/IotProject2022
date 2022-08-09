@@ -201,6 +201,9 @@ class ForecastHandler():
                                 forcast.fit(df.name)
                               
                                 self.predictions=forcast.forecast(df.name,self.n_predictions,ForecastHandler.get_data_avg(df))
+                                self.conf_int=forcast.fitted_model.conf_int(alpha=0.05)
+                                print("DIO PORCO")
+                                print(self.conf_int)
  
                                 self.prediction_list.append(deepcopy(self.predictions))
                                 self.pred[df.name] = self.predictions
@@ -280,18 +283,28 @@ class ForecastHandler():
                         predicted_data = predicted_data.set_index("Time").squeeze()
 
                         out_mse = "NaN"
+                        out_conf_int="NaN"
                         try:
                                 out_mse=mse(original_data[-forecast_handler.n_predictions::].tolist(),predicted_data[-forecast_handler.n_predictions::].tolist())
                                 out_mse= round(out_mse,4)
                                 out_mse = str(out_mse)
                         except:
                                 pass
+
+
+                        out_conf_int=forecast_handler.conf_int
                         '''
                         print(f"---mse:{name}---") 
                         print(out_mse)
                         print(f"---mse:{name}---") 
                         print()
                         '''
+                        
+                        print(f"---confidence interval:{name}---") 
+                        print(out_conf_int)
+                        print(f"---confidence interval:{name}---") 
+                        print()
+                        
                         original_data.plot(ax = ax, label='training',color="darkgreen")
                         predicted_data.plot(ax = ax , label='forecast',color='red')
 
