@@ -22,8 +22,8 @@ const char* ntpServer = "uk.pool.ntp.org";
 const long  gmtOffset_sec = 0;//3600;
 const int   daylightOffset_sec = 0;//3600;
 
-float GPS_LAT = 44.497612;
-float GPS_LNG = 11.353733;
+float GPS_LAT = 44.488;
+float GPS_LNG = 11.330;
 
 /* PARAMETERS */
 #define SERIAL_BAUD_RATE 115200
@@ -174,7 +174,6 @@ String getProtocol(){
 
 /*
 float getGPS(int coord){
-  if (coord == 0)
     return 44.083626;
   return 12.534610;
 }
@@ -197,12 +196,14 @@ void updateGPS(){
       GPS_LNG = myround(gps.location.lng(),3);
       //GPS_LAT = gps.location.lat();
       //GPS_LNG = gps.location.lng();
-      
+
+      /*
       lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print(GPS_LAT, 3);
       lcd.setCursor(0,1);
+      lcd.print(GPS_LAT, 3);
+      lcd.print("   ");
       lcd.print(GPS_LNG, 3);  
+      */
     }
     else
       Serial.println("[GPS] NO VALID DATA");
@@ -250,19 +251,22 @@ void  DisplayConfiguration () {
   //lcd.print("ARA ARA...");
 }
 
-void display_data(){
+void displayInfo(){
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print(user_id.c_str());
+  lcd.print(user_id);
   lcd.setCursor(0,1);
-  // We write the number of seconds elapsed 
-  lcd.print(temperature);
-  lcd.print("\xDF");
-  lcd.print("C ");
-  lcd.print(humidity);
-  lcd.print("% ");
-  //lcd.print(gas);
 
+  Serial.println("GANDALF E SILENTE MAGICI AMICI");
+  Serial.println(GPS_LAT);
+  Serial.println(String(GPS_LAT).c_str());
+  Serial.println(GPS_LNG);
+  Serial.println(String(GPS_LNG).c_str());
+  Serial.println("GANDALF E SILENTE MAGICI AMICI");
+  
+  lcd.print(GPS_LAT,3);
+  lcd.print("   ");
+  lcd.print(GPS_LNG,3); 
 }
 /* CONNECTIONS */
 
@@ -427,6 +431,7 @@ String getJson()
         float lng;
         */
         updateGPS();
+        displayInfo();
         
         gps_coord.add(GPS_LAT);
         gps_coord.add(GPS_LNG);
@@ -443,8 +448,7 @@ String getJson()
         String json_str;
         root.prettyPrintTo(json_str);
         Serial.println(json_str);
-        
-        //display_data();
+
         return json_str;
 }
 
@@ -504,6 +508,7 @@ void setup() {
 
 void loop() {
   if ((millis() - last_sample) > sample_frequency) {
+    lcd.clear();
     Serial.println();
     Serial.println("======================");
     Serial.print("Timer set to ");
@@ -511,18 +516,18 @@ void loop() {
 
       if (protocol==(String)"HTTP")
       {
-	      Serial.println();
-	      Serial.println("Using HTTP");
+        Serial.println();
+        Serial.println("Using HTTP");
         String page = "";
         page = setParametersFromServer(serverNameGet);
         HTTPost(serverNamePost,getJson());
       }
       else if (protocol==(String)"COAP")
       {
-	      String page = "";
+        String page = "";
         page = setParametersFromServer(serverNameGet);
         
-	      Serial.println();
+        Serial.println();
         Serial.println("Using CoAP");
         
         if(!Coap_Config)
@@ -532,7 +537,7 @@ void loop() {
       }      
       else if (protocol==(String)"MQTT")
       {
-	      Serial.println();
+        Serial.println();
         Serial.println("Using Mqtt");
         if(!MqttConfig)
           MqttConfiguration();

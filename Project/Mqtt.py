@@ -5,7 +5,7 @@ from paho.mqtt import publish, subscribe
 from utility import current_protocol, influx_parameters
 
 from utility import get_time, get_device_time, get_ntp_time, getDeviceId, getConfig, setMac
-from utility import updateConfigProtocol, updateProxyData
+from utility import updateConfigProtocol, updateProxyData, updateGps
 from influxdb import send_influxdb
 
 import ast
@@ -56,14 +56,10 @@ class MqttHandler:
                 # datetime(year, month, day, hour, minute, second)
                 sent_time = get_device_time(json_data["Time"])
                 recv_time = get_ntp_time()
+                packet_delay = (recv_time - sent_time).total_seconds()
             except:
                 print("[WARNING] NTP SERVER NO RESPONSE")
                 
-                if recv_time is None:
-                    recv_time = datetime.now()
-                if sent_time is None:
-                    sent_time = recv_time
-
             json_data["Delay"] = packet_delay
             json_data["PDR"] = MqttHandler.aggr_handler.get_packet_delivery_ratio(json_data["C_Protocol"])
             json_data["Time"] = get_time()
@@ -71,6 +67,9 @@ class MqttHandler:
             getConfig(json_data["IP"])
             json_data["DeviceId"] = getDeviceId(json_data["IP"])
             setMac(json_data["IP"], json_data["MAC"])
+            
+            json_data["GPS"] = [ round(x,3) for x in json_data["GPS"]]
+            updateGps(json_data["DeviceId"], json_data["GPS"])
 
             current_protocol["current_protocol"] = json_data["C_Protocol"]
             updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
