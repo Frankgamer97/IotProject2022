@@ -66,7 +66,7 @@ const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
 
-IPAddress COAP_SERVER(192, 168, 4, 203);
+IPAddress COAP_SERVER(192, 168, 4, 1);
 int COAP_PORT = 5683;
 boolean Coap_Config = false;
 
