@@ -31,11 +31,6 @@ unsigned long sample_frequency = 3000;
 float min_gas_value = 0;
 float max_gas_value = 100;
 
-float temperature = 0;
-float humidity = 0;
-float gas = 0;
-float gps = 0;
-float RSS = 0;
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
@@ -57,9 +52,9 @@ void setDelay(unsigned long timer)
 }
 
 
-float getGPS(int l)
+float getGPS(int coord)
 {
-  if (l==0)
+  if (coord==0)
   {
     gps=44.083626;
     return gps;
@@ -72,22 +67,22 @@ float getGPS(int l)
 
 float getRSSI()
 {
-  RSS = WiFi.RSSI();
+  return WiFi.RSSI();
 }
 
 float getTemperature()
 {
-  temperature = 0;//dht.readTemperature();
+  return dht.readTemperature();
 }
 
 float getHumidity()
 {
-  humidity = 0;//dht.readHumidity();
+  return dht.readHumidity();
 }
 
 float getGas()
 {
-  gas = 10;//analogRead(MQ2PIN);
+  gas = analogRead(MQ2PIN);
   meanFilter.AddValue(gas);
   return gas;
 }

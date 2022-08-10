@@ -10,12 +10,15 @@ MQTT_AUTH = {
     'password': MQTT_PASSWORD
     }
 
-MQTT_TOPIC = "Iot/2022/Project/config"
+MQTT_TOPIC = "Iot/2022/Project/data"
 MQTT_QOS=1
 
-ESP32_CONFIG = {'sample_frequency': "5000",
-             'min_gas_value': "0",
-             'max_gas_value': "100",
-             'protocol': "2"
-             }
-publish.single(MQTT_TOPIC, str(ESP32_CONFIG), qos=MQTT_QOS, hostname=MQTT_SERVER) #auth = MQTT_AUTH
+ESP32_DATA = {'MAC': "100",
+             'GPS': [100,11],
+             'Timestamp': "100",
+             'RSSI': "100",
+            'Temperature': "100",
+            'Humidity': "100",
+            'Gas': "100",
+            'AQI': "100"}
+publish.single(MQTT_TOPIC, str(ESP32_DATA), qos=MQTT_QOS, hostname=MQTT_SERVER) #auth = MQTT_AUTH
