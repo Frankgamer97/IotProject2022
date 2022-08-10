@@ -13,7 +13,7 @@ class StorageHandler():
             return None
         with open(file, "rb") as f:
             return pickle.load(f)
-
+ 
     @staticmethod
     def __save_pickle(obj, file_name: str, folder: str):
         file = os.path.join(folder, file_name)

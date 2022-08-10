@@ -50,7 +50,7 @@ def index():
 def tables():
     return render_template('tables.html', messages=proxyData)
 
-
+ 
 # esp32 post its value to the list proxydata
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
