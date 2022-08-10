@@ -1,4 +1,3 @@
-from functools import cache
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 
