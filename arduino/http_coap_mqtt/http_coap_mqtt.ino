@@ -47,8 +47,8 @@ int mqtt_sent_packets = 0;
 
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "JeepMobile";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
-const char password[] = "@dQmBvxoNRiINTG@1LxZ5JshRz@";//"ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
+const char ssid[] = "22lr";//"JeepMobile";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
+const char password[] = "raspberry123";//"@dQmBvxoNRiINTG@1LxZ5JshRz@";//"ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
 
 LiquidCrystal_I2C lcd(0x27, 16,2);
 
@@ -66,7 +66,7 @@ const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
 
-IPAddress COAP_SERVER(192, 168, 1, 203);
+IPAddress COAP_SERVER(192, 168, 4, 203);
 int COAP_PORT = 5683;
 boolean Coap_Config = false;
 
@@ -75,8 +75,8 @@ const char* update_api = "update";
 //WifiLocation location(googleApiKey);
 
 //Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.1.203:5000/update-sensor/";
-const char* serverNameGet = "http://192.168.1.203:5000/get-sensor/";
+const char* serverNamePost = "http://192.168.4.1:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.4.1:5000/get-sensor/";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
