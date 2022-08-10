@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+
+    <style>
+      /* table index */
+      @media screen and (max-width: 640px) {
+          table#customDataTable caption {
+              background-image: none;
+          }
+
+          table#customDataTable thead {
+              display: none;
+          }
+
+          table#customDataTable tbody td {
+              display: block;
+              padding: .8rem;
+          }
+
+      /*    table#customDataTable tbody tr td:first-child {
+              background: #666;
+              color: #fff;
+          }
+
+          table#customDataTable tbody tr td:first-child a {
+              color: #fff;
+          }
+
+          table#customDataTable tbody tr td:first-child:before {
+              color: rgb(225,181,71);
+          }
+      */
+
+          table#customDataTable tbody td:before {
+              content: attr(data-th);
+              font-weight: bold;
+              display: inline-block;
+              width: 15rem;
+          }
+
+          table#customDataTable tr th:last-child, table#customDataTable tr td:last-child {
+              max-width: 100% !important;
+              min-width: 100px !important;
+              width: 100% !important;
+          }
+      }
+
+    </style>
+
+{% endblock %}
+
+
+{% block title %}   ESP32  {% endblock %}
+
+{% block inner %}
+
+    <div id="place_for_suggestions"></div>
+
+{% endblock %}
+
+
+{% block scripts1 %}
+
+    <script>
+
+    setInterval(                               //Periodically 
+      function()
+      {
+        $.ajax({
+          url: "/tables",
+          type: "get",
+          data: {},
+          success: function(response) {
+            $("#place_for_suggestions").html(response);
+          },
+          error: function(xhr) {
+            //Do Something to handle error
+          }
+        });
+      },
+      1500);    
+
+    </script>
+
+{% endblock %}
+
+
+

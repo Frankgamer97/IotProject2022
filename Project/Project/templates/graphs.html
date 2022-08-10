@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+
+{% endblock %}
+
+
+{% block title %}   ESP32 STATISTICAL DATA  {% endblock %}
+
+{% block scripts1 %}
+<script type="text/javascript"> 
+
+var currentGraph = "Delay";
+var graph_dict = {"Delay": null, "PDR": null, "PPR": null, "Arima Temperature": null, "Arima Humidity": null, "Arima Gas": null};
+
+function bindInterval(){
+    graph_dict[currentGraph] = setInterval(
+        function(){
+          $.ajax({
+              url: "/getGraph",
+              type: "get",
+              data: {"graph": currentGraph},
+              success: function(response) {
+                  //alert(response)
+                  //$("#place_for_suggestions").html(response);
+                  //var image_container = document.getElementById("imageContainer");
+                  //image_container.set_attribute("src",response)
+                  $("#imageContainer").attr("src",response);
+                  
+              },
+              error: function(xhr) {}
+          }); 
+        }, {{data["intervall"]}});
+}
+
+function selectGraph(){
+    var selectBox = document.getElementById("selectContainer");
+ 
+    if(graph_dict[currentGraph] != null)
+        clearInterval(graph_dict[currentGraph]);
+    graph_dict[currentGraph] = null;
+    
+    currentGraph = selectBox.options[selectBox.selectedIndex].value;
+    bindInterval();
+    
+    
+}
+
+//alert("QUA");
+bindInterval();
+</script>
+{% endblock %}
+{% block inner %}
+    <hr>  
+      <div class="form-group">
+        <div class="input-group">
+            <span class="input-group-addon"><b></b></span>
+                <select id="selectContainer" class="selectpicker form-control" onchange="selectGraph();">
+                  {% for label in data["graphs"] %}
+                  <option value="{{ label }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+        </div> 
+      </div>
+      <img id="imageContainer" src="{{data['first_image']}}">
+   
+{% endblock %}

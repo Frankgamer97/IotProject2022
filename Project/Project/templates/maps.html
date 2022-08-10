@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block styles1 %}
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+		.leaflet-container {
+			height: 400px;
+			width: 600px;
+			max-width: 100%;
+			max-height: 100%;
+		}
+	</style>
+{% endblock %}
+
+
+{% block title %} ESP32 MAP {% endblock %}
+
+{% block scripts1 %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ==" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ==" crossorigin=""></script>
+
+<script type="text/javascript">
+
+    try{
+        
+        
+        
+        var user_marker_dict = {};
+        var coordinates_dict = {{data['coordinates']|tojson}}
+        var users = {{data['users']|tojson}};
+        
+        users = JSON.parse(users.replaceAll("'","\"")) 
+    
+        {% for userid in data["users"] %}
+            user_marker_dict["{{userid}}"] = null
+        {% endfor %}
+        
+        var currentUser = "";
+        
+         
+        if(users.length > 0)
+            currentUser = users[0]
+    
+         
+        
+        //console.log(users)
+        //console.log(currentUser)
+        //console.log(typeof currentUser)
+         
+        function updateOPSmap(coordinates) {
+            
+            //console.log("updateOPSmap")
+            //console.log(coordinates)
+            
+            for (const [user, coord] of Object.entries(coordinates)) {
+                 
+                if (user_marker_dict[user] != null) {
+                    map.removeLayer(user_marker_dict[user])
+                }
+
+                user_marker_dict[user] = new L.marker(new L.LatLng(coord[0], coord[1]))
+
+                if (user.localeCompare(currentUser) == 0) {
+                    user_marker_dict[user] = new L.marker(new L.LatLng(coord[0], coord[1]), { icon: redIcon })
+                }
+
+                map.addLayer(user_marker_dict[user])
+            }
+            
+            coordinates_dict = coordinates
+        }
+         
+        function selectMarker(user) {
+
+            userid = user.value
+
+            
+            //console.log("CURRENT: "+currentUser)
+            //console.log("NEW    : ", userid)
+            
+            old_coordinates = coordinates_dict[currentUser]
+            //console.log("OLD COORD: ")
+            //console.log(old_coordinates)
+            
+            new_coordinates = coordinates_dict[userid]
+            //console.log("NEW COORD: ")
+            //console.log(new_coordinates)
+
+            if (user_marker_dict[userid] != null) {
+                map.removeLayer(user_marker_dict[userid])
+                map.removeLayer(user_marker_dict[currentUser])
+            }
+
+            user_marker_dict[currentUser] = new L.marker(new L.LatLng(old_coordinates[0], old_coordinates[1]))
+            user_marker_dict[userid] = new L.marker(new L.LatLng(new_coordinates[0], new_coordinates[1]), { icon: redIcon })
+            
+            
+
+            map.addLayer(user_marker_dict[currentUser])
+            map.addLayer(user_marker_dict[userid])
+            
+            map.setView(new_coordinates)
+            
+            currentUser = userid
+        }
+         
+        function buildInterval() {
+            setInterval(
+                function () {
+                    $.ajax({
+                        url: "/getCoord",
+                        type: "get",
+                        success: function (response) {
+                            //alert(response)
+                            //$("#place_for_suggestions").html(response);
+                            //var image_container = document.getElementById("imageContainer");
+                            //image_container.set_attribute("src",response)
+                            
+                            //console.log("=======================")
+                            //console.log(response)
+                            //console.log("=======================")
+                            updateOPSmap(response)
+
+                        },
+                        error: function (xhr) { }
+                    });
+                }, 2500);
+        }
+         
+         
+        var map = L.map('map').setView({{data["first_coordinates"]}}, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        const redIcon = new L.Icon({
+            iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+            shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });  
+         
+        updateOPSmap(coordinates_dict)
+        buildInterval()
+    
+    
+    }
+    catch(err){
+        console.log(err)
+    }
+
+    
+</script>
+{% endblock %}
+{% block inner %}
+<hr>
+<div class="form-group">
+    <div class="input-group">
+        <span class="input-group-addon"><b></b></span>
+        <select id="selectContainer" class="selectpicker form-control" onchange="selectMarker(this);">
+            {% for userid in data["coordinates"].keys() %} <option value="{{ userid }}">{{ userid }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+<div id="map"></div>
+
+{% endblock %}

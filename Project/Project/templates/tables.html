@@ -1,0 +1,72 @@
+<table id="customDataTable" class="bootstrap-table table table-striped table-hover table-responsive{-sm|-md|-lg|-xl} ">
+  <thead>
+    <tr>
+      <th scope="col">TIME</th>
+      <th scope="col">DEVICE</th>
+      <th scope="col">MAC</th>
+      <th scope="col">PROTOCOL</th>
+      <th scope="col">LATITUDE</th>
+      <th scope="col">LONGITUDE</th>
+      <th scope="col">WIFI RSSI</th>
+      <th scope="col">TEMPERATURE</th>
+      <th scope="col">HUMIDITY</th>
+      <th scope="col">GAS</th>
+      <th scope="col">AQI</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for message in messages %}
+    <tr>
+      <td data-th="TIME">{{ message['Time'].strftime("%Y-%m-%d %H:%M:%S") }}</td>
+      <td data-th="DEVICE">{{ message['DeviceId'] }}</td>
+      <td data-th="MAC">{{ message['MAC'] }}</td>
+      <td data-th="PROTOCOL">{{ message['C_Protocol'] }}</td>
+      <td data-th="LATITUDE">{{ message['GPS'][0] }}</td>
+      <td data-th="LONGITUDE">{{ message['GPS'][1] }}</td>
+      <td data-th="WIFI RSSI"> {{ message['RSSI'] }}</td>
+      <td data-th="TEMPERATURE">{{ message['Temperature'] }}</td>
+      <td data-th="HUMIDITY">{{ message['Humidity'] }}</td>
+      <td data-th="GAS">{{ message['Gas'] }}</td>
+      <td data-th="AQI">{{ message['AQI'] }}</td>
+    </tr>
+  </tbody>
+  {% endfor %}
+  <hr>
+</table>
+
+
+{% for message in messages %}
+<!--
+<div style="overflow-x: auto;" class="calculator">
+  <table class="bootstrap-table table table-striped table-hover table-responsive{-sm|-md|-lg|-xl}" id="myTable">
+    <thead>
+      <tr>
+        <th scope="col">Time</th>
+        <th scope="col">Device</th>
+        <th scope="col">Latitude</th>
+        <th scope="col">Longitude</th>
+        <th scope="col">WIFI RSSI</th>
+        <th scope="col">Temperature</th>
+        <th scope="col">Humidity</th>
+        <th scope="col">Gas Detection</th>
+        <th scope="col">AQI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ message['Time'].strftime("%Y-%m-%d %H:%M:%S") }}</td>
+        <td>{{ message['MAC'] }}</td>
+        <td> {{ message['GPS'][0] }}</td>
+        <td> {{ message['GPS'][1] }}</td>
+        <td> {{ message['RSSI'] }}</td>
+        <td> {{ message['Temperature'] }}</td>
+        <td>{{ message['Humidity'] }}</td>
+        <td>{{ message['Gas'] }}</td>
+        <td>{{ message['AQI'] }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+-->
+{% endfor %}
