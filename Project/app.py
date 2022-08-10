@@ -49,7 +49,6 @@ def index():
 @app.route('/tables')
 def tables():
     return render_template('tables.html', messages=proxyData)
-
  
 # esp32 post its value to the list proxydata
 @app.route('/update-sensor/', methods=['GET', 'POST'])
@@ -89,7 +88,7 @@ def updatesensor():
 
     arima_handler.arima_updates()
     bot_handler.telegram_updates()
-
+    
     # momo = datetime.now()
     # print("I am waiting")
     # while True:

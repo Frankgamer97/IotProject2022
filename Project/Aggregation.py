@@ -102,7 +102,6 @@ class Aggregation:
 		except:
 			return -1
 		
- 
 	def get_pdr_among_protocols(self):
 		protocols = ["HTTP", "COAP", "MQTT"]
 		pdrs = [self.get_last_pdr(protocol) for protocol in protocols if self.get_last_pdr(protocol) >= 0]

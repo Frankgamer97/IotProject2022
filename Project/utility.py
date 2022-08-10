@@ -45,7 +45,7 @@ graph_meta={
     "Delay": {"label": "Seconds", "title": "Average Delay"},
     "PDR": {"label": "PDR", "title": "PDR"},
     "PPR": {"label": "PPR", "title": "PPR"},
- 
+
     "Arima Temperature": {"title": "Forecast Temperature"},
     "Arima Humidity": {"title": "Forecast Humidity"},
     "Arima Gas": {"title": "Forecast Gas"}

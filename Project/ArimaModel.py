@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from pmdarima.preprocessing import FourierFeaturizer
 from sklearn.metrics import mean_squared_error as mse
 from copy import deepcopy
- 
+
 import pandas as pd
 import pmdarima as pm
 import numpy as np

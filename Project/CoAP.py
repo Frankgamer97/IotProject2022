@@ -59,7 +59,7 @@ class CoapServer(resource.Resource):
             
             self.arima_handler.arima_updates()
             self.bot_handler.telegram_updates()
- 
+
         except Exception as e:
             print("[COAP] PUT REQUEST ERROR")
             print()

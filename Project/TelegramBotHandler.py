@@ -10,7 +10,7 @@ class TelegramBotHandler():
     telegram_chat_id = "-1001781808448"
     
     def __init__(self, aggregation_handler, maxupdate=telegram_bot_update_frequency, image_dir="tmp"):
- 
+
         self.dir = image_dir
         self.aggregation_handler = aggregation_handler
         self.df = None
