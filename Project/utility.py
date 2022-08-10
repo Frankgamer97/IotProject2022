@@ -58,7 +58,7 @@ userid_ip_dict = {}
 
 # 
 userid_gps = {}
-userid_gps = {"Esp32_1": [40.661,17.695], "Esp32_2": [40.662,17.696]}
+# userid_gps = {"Esp32_1": [40.661,17.695], "Esp32_2": [40.662,17.696]}
 
 ip_mac_dict = {}
 ip_config_dict = {}
