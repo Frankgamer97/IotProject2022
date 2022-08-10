@@ -124,6 +124,7 @@ class MeteoPredictor(Meteo):
 		influxdb_post(post_df, measurement=self.measurement,tag_col=["GPS"])
 
 if __name__ == '__main__':
+	 
 	meteor = MeteoPredictor(measurement="meteostat-FinalTest")
 	meteor.build_dataframe(start=(2020, 12, 1),end=(2022, 7, 1))
 	meteor.post_data_raw()

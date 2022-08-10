@@ -1,0 +1,20 @@
+from(bucket:"esp32")
+    |> range(start: -30d)
+    |> filter(fn:(r) => r["_measurement"] == "test-august4-2")
+    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value" )
+
+
+
+
+from(bucket:"esp32")
+    |> range(start: -30d)
+    |> filter(fn:(r) => r["_measurement"] == "test-august4-2")
+    |> filter(fn:(r) => r["_field"] == "Temperature")
+
+
+from(bucket:"esp32")
+    |> range(start: -30d)
+    |> filter(fn:(r) => r["_measurement"] == "test-august4-2")
+    |> filter(fn:(r) => r["_field"] == "RSSI")
+    |> drop(columns: ["Device"]) 
+    |> drop(columns: [ "GPS"])

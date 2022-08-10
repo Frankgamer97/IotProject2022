@@ -1,44 +1,53 @@
-from gc import callbacks
-from time import sleep
+# from lib2to3.pytree import _Results
+from pdb import post_mortem
+from struct import pack
+from flask import Flask, make_response, request, redirect, url_for, abort, flash, session, jsonify, render_template
 from flask_bootstrap import Bootstrap
-from flask import Flask, request, abort, flash, jsonify, render_template
-from os import getenv
 
-from datetime import datetime
-
-from utility import current_protocol, proxyData, influx_parameters, mqtt_handler
-from utility import coap_handler, graph_meta, graph_intervall, userid_gps
-from utility import get_time, is_int, get_IP, get_device_time 
-from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
-from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
-from utility import updateGps, updateProxyData, acquireInputParameters
-
-from influxdb import send_influxdb
-from Aggregation import Aggregation
-
-from TelegramBotHandler import TelegramBotHandler
-from DataStorage import StorageHandler
-from ArimaModel import ForecastHandler
 from Mqtt import MqttHandler
 from CoAP import CoapHandler
 
-acquireInputParameters()
+from utility import SERVER_MEASUREMENTS, current_protocol, listvalues, influx_parameters, mqtt_handler, coap_handler
+from utility import get_time, is_int, get_protocol, get_IP, get_device_time, influxdb_measurement
+from utility import get_ntp_time, getDeviceId, getAllDevices, getMac, getConfig,getFirstConfig
+from utility import sort_protocol, getConfigByUserId, setMac, getIpByUserId, updateConfigProtocol
+from utility import post_parameters,jsonpost2pandas
+
+from utility import graph_meta, graph_intervall
+from influxdb import influxdb_post
+from aggregation import Aggregation
+from TelegramBotHandler import TelegramBotHandler
+from DataStorage import StorageHandler
+
+from datetime import datetime
+
+import pybase64
+from io import BytesIO
+from matplotlib.figure import Figure
+# from DeviceStatHandler import DeviceStatHandler
+
+import os
 
 aggr = Aggregation()
 bot_handler = TelegramBotHandler(aggr)
-arima_handler=ForecastHandler(influx_parameters["measurement"])
+http_startMeasurements = None
 
 
 #app = Flask(__name__, template_folder='templates')
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.secret_key = getenv('SECRET_KEY', 'secret string')
+app.secret_key = os.getenv('SECRET_KEY', 'secret string')
 Bootstrap(app)
 
-# 404 
+
+
+# 404 #INUTILE
 @app.route('/404')
 def not_found():
     abort(404)
+
+
+
 
 #Main page with results
 @app.route('/')
@@ -48,13 +57,27 @@ def index():
 #GET TABLES AT RUNTIME
 @app.route('/tables')
 def tables():
-    return render_template('tables.html', messages=proxyData)
- 
-# esp32 post its value to the list proxydata
+    return render_template('tables.html', messages=listvalues)
+
+
+# esp32 post its value to the list listvalues
 @app.route('/update-sensor/', methods=['GET', 'POST'])
 def updatesensor():
+    
+    #mac = json_data["MAC"]
+    #GPS= json_data["GPS"]
+    #rssi = json_data["RSSI"]
+    #Temperature = json_data["Temperature"]
+    #Humidity = json_data["Humidity"]
+    #Gas = json_data["Gas"]
+    #AQI = json_data["AQI"]
+
     global aggr
+    # global current_protocol
+
     json_data = request.json           
+    
+    # print("[POST] CURRENT PROTOCOL ========> ", current_protocol["current_protocol"])
     sent_time = None
     recv_time = None 
     packet_delay = 0
@@ -62,40 +85,50 @@ def updatesensor():
     try:
         sent_time = get_device_time(json_data["Time"])# datetime(year, month, day, hour, minute, second)
         recv_time = get_ntp_time()
-        packet_delay = (recv_time - sent_time).total_seconds()
     except:
         print("[WARNING] NTP SERVER NO RESPONSE")
-    
+        
+        if recv_time is None:
+            recv_time = datetime.now()
+        if sent_time is None:
+            sent_time = recv_time
+
+    packet_delay = (recv_time - sent_time).total_seconds()
 
     json_data["Delay"] = packet_delay
-    # json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
+    json_data["PDR"] = aggr.get_packet_delivery_ratio(json_data["C_Protocol"])
     json_data["Time"] = get_time()
     
+    if len(listvalues) >= SERVER_MEASUREMENTS:
+        del listvalues[-1]
+    # print("REMOTE ADDRESS:---->",request.remote_addr)
     getConfig(json_data["IP"])
     json_data["DeviceId"] = getDeviceId(json_data["IP"])
     setMac(json_data["IP"], json_data["MAC"])
 
-    json_data["GPS"] = [ round(x,3) for x in json_data["GPS"]]
-    updateGps(json_data["DeviceId"], json_data["GPS"])
-
     current_protocol["current_protocol"]= json_data["C_Protocol"]
     updateConfigProtocol(json_data["IP"], json_data["C_Protocol"])
 
-    updateProxyData(json_data)
+    listvalues.insert(0, json_data
+                      #{'MAC': mac,
+                      #  'GPS': GPS,
+                      #  'RSSI': rssi,
+                      #  'Temperature': Temperature,
+                      #  'Humidity': Humidity,
+                      #  'Gas': Gas,
+                      #  'AQI': AQI,
+                      #  'Protocol': current_protocol
+                      #  }
+                       )
     aggr.update_pandas()
-
-    send_influxdb(json_data, measurement = influx_parameters["measurement"])
-
-    arima_handler.arima_updates()
     bot_handler.telegram_updates()
-    
-    # momo = datetime.now()
-    # print("I am waiting")
-    # while True:
-    #     momo2 = datetime.now()
-    #     if (momo2 - momo).total_seconds() >=3:
-    #         break
+
+    influxdb_post(jsonpost2pandas(json_data), measurement=influxdb_measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
+
+
     return "ok"
+
+
 
 #esp32 take values from the json post_parameters
 @app.route("/get-sensor/", methods=('GET', 'POST'))
@@ -104,7 +137,15 @@ def getsensor():
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
 
     config = getConfig(request.remote_addr)
-    return jsonify(config)
+
+    return jsonify(
+        config# post_parameters
+        #sample_frequency=post_parameters["sample_frequency"],
+        #min_gas_value=post_parameters["min_gas_value"],
+        #max_gas_value=post_parameters["max_gas_value"],
+        #protocol=post_parameters["protocol"],
+    )
+
 
 #a little form to update the json post_parameters
 @app.route('/set-parameters/', methods=('GET', 'POST'))
@@ -112,6 +153,11 @@ def setparams():
     is_ok = True
 
     if request.method == 'POST':
+        
+        # global current_protocol
+
+        # print("CURRENT PROTOCOL [PRE UPDATING]======> ", current_protocol["current_protocol"])
+
         if len(getAllDevices()) == 0 or not request.form.get('DeviceId'):
             is_ok = False
             flash('No device found'.upper(), "alert")
@@ -126,6 +172,8 @@ def setparams():
             min_gas_value = request.form['min_gas_value']
             max_gas_value = request.form['max_gas_value']
             protocol = request.form.get('comp_select')
+
+            # is_ok = True
 
             if not MAC:
                 MAC = ""
@@ -158,11 +206,12 @@ def setparams():
                 remote_configs['sample_frequency']= sample_frequency
                 remote_configs['min_gas_value']= min_gas_value
                 remote_configs['max_gas_value']= max_gas_value
-                remote_configs['protocol']= protocol
+                remote_configs['protocol']= protocol# get_protocol(protocol)
 
                 if current_protocol["current_protocol"] == "HTTP":
                     pass
                 if current_protocol["current_protocol"] == "MQTT":
+                    # print("SONO QUI")
                     mqtt_handler.update_config(remote_configs)
                 
                 if current_protocol["current_protocol"] == "COAP":
@@ -171,9 +220,9 @@ def setparams():
                 current_protocol["current_protocol"] = protocol
                     
                 flash('Parameters updated'.upper(), "success")
+                # return redirect(url_for('index'))
     else:
         remote_configs = getFirstConfig()
-
     #print("REMOTe PROTOCOL:------>", remote_configs)
     # protocols=[{'name':'HTTP'}, {'name':'COAP'}, {'name':'MQTT'}]
 
@@ -186,11 +235,22 @@ def setparams():
         }
 
     if is_ok:
+        # print("[SET-PARAM] remote config", remote_configs)
         protocols = sort_protocol(remote_configs, protocols)
         
         devices = getAllDevices()
-    
+        # devices.append("Mucciacia")
+
         devices_config = getConfigByUserId()
+        # devices_config["Mucciacia"] = {
+        #         'MAC':"Giovanni",
+        #         'user_id':"Mucciacia",
+        #         'sample_frequency': "75000",
+        #         'min_gas_value': "50",
+        #         'max_gas_value': "95000",
+        #         'protocol': "2"
+        #         }
+        #
 
         data = {
             "protocols": protocols,
@@ -209,11 +269,14 @@ def getinfluxdb():
     #ex: sample_frequency=100       ==>   {"sample_frequency":"100"}
     return jsonify(influx_parameters)
 
+
+
 #a form to update the influx parameters
 @app.route('/set-influxdb/', methods=('GET', 'POST'))
 def setinfluxdb():
     if request.method == 'POST':
         
+
         user = request.form['user']
         token = request.form['token']
         bucket = request.form['bucket']
@@ -233,17 +296,22 @@ def setinfluxdb():
         if not measurement:
             measurement=influx_parameters["measurement"]
 
+
         if is_ok:
             influx_parameters['user']= user
             influx_parameters['token']= token
             influx_parameters['bucket']= bucket
             influx_parameters['server']= server
             influx_parameters['measurement']= measurement
+
+            
                   
             flash('Parameters updated'.upper(), "success")
             # return redirect(url_for('index'))
 
     return render_template('set_influxdb.html')
+
+
 
 @app.route('/graphs/', methods=['GET'])
 def graphs():
@@ -252,7 +320,7 @@ def graphs():
     global aggr
 
     image = aggr.build_graph("Delay", graph_meta["Delay"]["label"], graph_meta["Delay"]["title"])
-    data = {"graphs": list(graph_meta.keys()), "first_image": image, "intervall": graph_intervall}
+    data = {"graphs": ["Delay","Ratio"], "first_image": image, "intervall": graph_intervall}
 
     return render_template('graphs.html', data=data)
 
@@ -260,65 +328,55 @@ def graphs():
 def getGraph():
     global aggr
     graph =request.args.get('graph')
-    
-    if graph == "Delay" or graph == "PDR" or graph == "PPR":
-        image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
 
-    elif "Arima" in graph:
-        image_name = graph.split(" ")[1]
-        image = arima_handler.images[image_name]
 
-    else:
-        print("[getGraph] WARNING: unknown image selected")
+
+    image = aggr.build_graph(graph, graph_meta[graph]["label"], graph_meta[graph]["title"])
 
     return image
-
-@app.route("/map/", methods=['GET'])
-def map():
-    global userid_gps
-    data = {}
-    
-    data["coordinates"] = userid_gps
-    
-    userid_keys = list(userid_gps.keys())
-    data["users"] = str(userid_keys)
-
-    if len(userid_keys) == 0:
-        data["first_coordinates"] = "[41.890309,12,492510]" 
-    else:
-        data["first_coordinates"] = userid_gps[userid_keys[0]]
-
-    return render_template('maps.html', data = data)
-
-@app.route("/getCoord/", methods=['GET'])
-def getCoord():
-    
-    global userid_gps
-    
-    users = list(userid_gps.keys())
-    for userid in users:
-        userid_gps[userid] = [userid_gps[userid][0], userid_gps[userid][1]]
-    return userid_gps
 
 @app.route('/aggregation/')
 def aggregation():
     return render_template('aggregation.html')
 
+
+
+
 #GET TABLES AT RUNTIME
 @app.route('/aggregate')
 def aggregate():
+    #print(aggr.build_aggregate())
     return render_template('aggregate.html', messages=aggr.build_aggregate())
 
 #flask run --host=0.0.0.0
 if __name__ == '__main__':
-
     StorageHandler.create_tmp_directories()
-
-    mqtt_handler = MqttHandler(bot_handler, arima_handler, aggr)
-    coap_handler = CoapHandler(bot_handler, arima_handler, aggr)
-
     ip=get_IP()
+
+    mqtt_handler = MqttHandler(listvalues, bot_handler, aggr)
+    coap_handler = CoapHandler(listvalues, bot_handler, aggr, SERVER_IP=ip)
+    # stat_handler = DeviceStatHandler.control_updates()
+    
+
     app.run(host=ip,port=5000)
 
     mqtt_handler.mqtt_thread.join(0)
     coap_handler.coap_thread.join(0)
+    # bot_handler.join(0)
+    # stat_handler.join(0)
+    
+
+
+
+    #ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
+    #print("------>",ip)
+
+    #  from livereload import Server
+    #  server = Server(app.wsgi_app)
+    #  server.serve(host = '0.0.0.0',port=5000)
+    #,extra_files=listvalues)
+    # server = Thread(target=_run)
+    # server.start()
+    # mqtt_handler.subscribe_updates()
+    # server.join()
+
