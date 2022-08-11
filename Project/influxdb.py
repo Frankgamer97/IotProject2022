@@ -116,7 +116,7 @@ def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
         ArimaCountUpdates = 0
 
         try:
-            ArimaDFPost = ArimaDFPost.append(json_post)
+            ArimaDFPost = pd.concat([ArimaDFPost,json_post])
             ArimaDFPost.reset_index(inplace=True, drop=True)
             influxdb_post(ArimaDFPost, measurement=measurement,tag_col=["Device","GPS"]) # IMPORTANTE!!!!
             ArimaDFPost = pd.DataFrame()

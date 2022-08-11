@@ -1,22 +1,19 @@
-/*
-  Complete project details at Complete project details at https://RandomNerdTutorials.com/esp32-http-get-post-arduino/
-*/
 
 /* LIBRARIES */
 #include <Wire.h>
-#include <TinyGPS++.h>
-#include <LiquidCrystal_I2C.h>
-#include <DHT.h>
+#include <TinyGPS++.h> //https://github.com/mikalhart/TinyGPSPlus//v1.0.3
+#include <LiquidCrystal_I2C.h> //https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library//last version
+#include <DHT.h> //https://github.com/adafruit/DHT-sensor-library//v1.4.4
 #include <WiFi.h>
-#include <PubSubClient.h> //https://github.com/plapointe6/EspMQTTClient
+#include <PubSubClient.h> //https://github.com/plapointe6/EspMQTTClient//v1.13.3
 #include <WiFiUdp.h>
-#include <coap-simple.h>
+#include <coap-simple.h> //https://github.com/hirotakaster/CoAP-simple-library//v1.3.24
 #include <HTTPClient.h>
-#include <ArduinoJson.h> //v5.13.5
-#include <MeanFilterLib.h> //https://github.com/luisllamasbinaburo/Arduino-Meanfilter
-//#include <WifiLocation.h> //https://github.com/gmag11/WifiLocation
+#include <ArduinoJson.h> //https://github.com/bblanchon/ArduinoJson//v5.13.5
+#include <MeanFilterLib.h> //https://github.com/luisllamasbinaburo/Arduino-Meanfilter//v1.0.0
 #include "Time.h"
-/* PARAMETERS */
+
+/* DEFINE */
 #define SERIAL_BAUD_RATE 115200
 #define DHTTYPE DHT22
 
@@ -28,34 +25,34 @@
 
 #define AQInum 5
 
+/* PARAMETERS */
 String user_id = "";
-const char* ntpServer = "uk.pool.ntp.org";
-const long  gmtOffset_sec = 0;//3600;
-const int   daylightOffset_sec = 0;//3600;
 
-float GPS_LAT = 44.488;
-float GPS_LNG = 11.330;
+const char ssid[] = "22lr";
+const char password[] = "raspberry123";
 
-int http_total_packets = 0;
-int http_sent_packets = 0;
+String protocol = "HTTP"; /* HTTP,COAP, MQTT */
 
-int coap_total_packets = 0;
-int coap_sent_packets = 0;
+/* HTTP parameters*/
+//Your Domain name with URL path or IP address with path
+const char* serverNamePost = "http://192.168.4.1:5000/update-sensor/";
+const char* serverNameGet = "http://192.168.4.1:5000/get-sensor/";
+/* */
 
-int mqtt_total_packets = 0;
-int mqtt_sent_packets = 0;
 
+/* COAP parameters*/
+IPAddress COAP_SERVER(192, 168, 4, 1);
+int COAP_PORT = 5683;
+boolean Coap_Config = false;
+const char* update_api = "update";
 void callback_response(CoapPacket &packet, IPAddress ip, int port);
 
-const char ssid[] = "22lr";//"JeepMobile";//"TIM-Salentu";//"RouterPi";//"TIM-03859326";
-const char password[] = "raspberry123";//"@dQmBvxoNRiINTG@1LxZ5JshRz@";//"ScistiASantuVituETeStizzasti5724_@#";//"raspberry123";//"f5R235Dhc5bdYbCUtGfKH6zP";
+WiFiUDP udp;
+Coap coap(udp);
+/* */
 
-LiquidCrystal_I2C lcd(0x27, 16,2);
 
-HardwareSerial neogps(1);
-TinyGPSPlus gps;
-
-/* MQTT broker configuration*/
+/* MQTT broker parameters*/
 const char* MQTT_SERVER="broker.emqx.io";
 int MQTT_PORT=1883;
 const char* MQTT_USER = "";
@@ -65,25 +62,44 @@ boolean MqttConfig = false;
 const char* data_topic="Iot/2022/Project/data";
 const char* config_topic="Iot/2022/Project/config";
 
+PubSubClient clientMQTT;
+WiFiClient clientWiFi;
+/* */
+
+/* NTP parameters*/
+const char* ntpServer = "uk.pool.ntp.org";
+const long  gmtOffset_sec = 0;//3600;
+const int   daylightOffset_sec = 0;//3600;
+/* */
+
+/* GPS parameters*/
+float GPS_LAT = 44.488;
+float GPS_LNG = 11.330;
+HardwareSerial neogps(1);
+TinyGPSPlus gps;
+/* */
+
+/* PDR parameters*/
+int http_total_packets = 0;
+int http_sent_packets = 0;
+
+int coap_total_packets = 0;
+int coap_sent_packets = 0;
+
+int mqtt_total_packets = 0;
+int mqtt_sent_packets = 0;
+/* */
 
 
-IPAddress COAP_SERVER(192, 168, 4, 1);
+LiquidCrystal_I2C lcd(0x27, 16,2);
 
-int COAP_PORT = 5683;
-boolean Coap_Config = false;
 
-const char* update_api = "update";
-//const char* googleApiKey = "AIzaSyDfWfv8Ueu32tOjWw70PjDb1g3S3AGyo2w";
-//WifiLocation location(googleApiKey);
 
-//Your Domain name with URL path or IP address with path
-const char* serverNamePost = "http://192.168.4.1:5000/update-sensor/";
-const char* serverNameGet = "http://192.168.4.1:5000/get-sensor/";
-
+/* sensory parameters*/
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long last_sample = 0;
-unsigned long sample_frequency = 3000;
+unsigned long sample_frequency = 5000;
 
 float min_gas_value = 0;
 float max_gas_value = 100;
@@ -94,19 +110,16 @@ float gas = 0;
 //float gps = 0;
 float rssi = 0;
 
-String protocol = "HTTP"; /* {0: http, 1: coap, 2: mqtt */
 
 MeanFilter<float> meanFilter(AQInum);
 DHT dht(DHTPIN,DHTTYPE);
+/* */
 
-PubSubClient clientMQTT;
-WiFiClient clientWiFi;
 
-WiFiUDP udp;
-Coap coap(udp);
 
 /* UTILITIES FUNCTIONS, GET AND SET PARAMETERS */
 
+/* NTP functions*/
 String getMonth(String month){
  if(month == "January")
   return "1";
@@ -136,9 +149,6 @@ String getMonth(String month){
  return "-1";
 }
 
-float myround(float num, int places){
-  return String(num,places).toFloat();
-}
 
 String getTime(){
   struct tm timeinfo;
@@ -171,17 +181,7 @@ String getTime(){
   
   return "";
 }
-
-float getPDR(){
-  if(protocol == String("HTTP"))
-    return http_sent_packets >= 0 && http_total_packets > 0?((float)http_sent_packets) / http_total_packets:0 ;
-  if(protocol == String("COAP"))
-    return coap_sent_packets >= 0 && coap_total_packets > 0?((float)coap_sent_packets) / coap_total_packets:0;
-  if(protocol == String("MQTT"))
-    return mqtt_sent_packets >= 0 && mqtt_total_packets > 0?((float)mqtt_sent_packets) / mqtt_total_packets:0;
-
-  return -1;
-}
+/* */
 
 String getProtocol(){
   /*if(protocol == 0)
@@ -194,12 +194,22 @@ String getProtocol(){
   return protocol;
 }
 
-/*
-float getGPS(int coord){
-    return 44.083626;
-  return 12.534610;
+/* sensory functions */
+
+float getPDR(){
+  if(protocol == String("HTTP"))
+    return http_sent_packets >= 0 && http_total_packets > 0?((float)http_sent_packets) / http_total_packets:0 ;
+  if(protocol == String("COAP"))
+    return coap_sent_packets >= 0 && coap_total_packets > 0?((float)coap_sent_packets) / coap_total_packets:0;
+  if(protocol == String("MQTT"))
+    return mqtt_sent_packets >= 0 && mqtt_total_packets > 0?((float)mqtt_sent_packets) / mqtt_total_packets:0;
+
+  return -1;
 }
-*/
+
+float myround(float num, int places){
+  return String(num,places).toFloat();
+}
 
 void updateGPS(){
   boolean new_data = false;
@@ -266,7 +276,9 @@ int getAQI(){
   else
     return 2;
 }
-/* DISPLAY CONFIG*/
+/* */
+
+/* LCD DISPLAY functions*/
 void  DisplayConfiguration () {
   lcd.begin(); 
   lcd.backlight(); 
@@ -283,7 +295,8 @@ void displayInfo(){
   lcd.print("   ");
   lcd.print(GPS_LNG,3); 
 }
-/* CONNECTIONS */
+/* */
+
 
 void WifiConnection(){
 
@@ -300,6 +313,39 @@ void WifiConnection(){
 
 }
 
+String getJson()
+{
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject &root = jsonBuffer.createObject();
+        JsonArray &gps_coord = root.createNestedArray("GPS");
+        /*
+        float lat;
+        float lng;
+        */
+        updateGPS();
+        displayInfo();
+        
+        gps_coord.add(GPS_LAT);
+        gps_coord.add(GPS_LNG);
+        //root["GPS"] = getGPS();
+        root["RSSI"] = getRSSI();
+        root["Temperature"] = getTemperature();
+        root["Humidity"] = getHumidity();
+        root["Gas"] = getGas();
+        root["AQI"] = getAQI();
+        root["MAC"] = WiFi.macAddress();
+        root["C_Protocol"] = getProtocol();
+        root["Time"] = getTime();
+        root["IP"] =  WiFi.localIP().toString();
+        root["PDR"] = getPDR();
+        String json_str;
+        root.prettyPrintTo(json_str);
+        Serial.println(json_str);
+
+        return json_str;
+}
+
+/* MQTT functions */
 void MqttConnect(){
   clientMQTT.connect("MYesp32",MQTT_USER,MQTT_PASSWD);
 
@@ -369,9 +415,9 @@ void MqttConfiguration(){
     MqttConfig=true;
   }
 }
+/* */
 
-/* CoAP*/
-
+/* CoAP functions*/
 void callback_response(CoapPacket &packet, IPAddress ip, int port){
   Serial.println("[COAP] Response got");
       
@@ -387,9 +433,9 @@ void CoapConfiguration(){
   coap.response(callback_response);
   coap.start();  
 }
+/* */
 
-/* HTTP GET */
-
+/* HTTP GET functions */
 String setParametersFromServer(const char* serverName)
 {
     String page = "";
@@ -438,41 +484,7 @@ String HTTPGet(const char* serverName){
   return payload;
 }
 
-/* HTTP POST */
-
-
-String getJson()
-{
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonArray &gps_coord = root.createNestedArray("GPS");
-        /*
-        float lat;
-        float lng;
-        */
-        updateGPS();
-        displayInfo();
-        
-        gps_coord.add(GPS_LAT);
-        gps_coord.add(GPS_LNG);
-        //root["GPS"] = getGPS();
-        root["RSSI"] = getRSSI();
-        root["Temperature"] = getTemperature();
-        root["Humidity"] = getHumidity();
-        root["Gas"] = getGas();
-        root["AQI"] = getAQI();
-        root["MAC"] = WiFi.macAddress();
-        root["C_Protocol"] = getProtocol();
-        root["Time"] = getTime();
-        root["IP"] =  WiFi.localIP().toString();
-        root["PDR"] = getPDR();
-        String json_str;
-        root.prettyPrintTo(json_str);
-        Serial.println(json_str);
-
-        return json_str;
-}
-
+/* HTTP POST functions*/
 void HTTPost(const char* serverName, String json_output){
   //Send an HTTP POST request every timerDelay seconds
   
