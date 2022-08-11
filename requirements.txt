@@ -1,5 +1,6 @@
 numpy==1.23.0
 pandas==1.4.3
+requests==2.28.1
 matplotlib==3.5.2
 python-telegram-bot==13.13
 dataframe-image==0.1.1
@@ -10,7 +11,6 @@ flask-bootstrap==3.3.7.1
 influxdb-client==1.30.0
 jinja2==3.1.1
 meteostat==1.6.3
-requests==2.28.1
 ntplib==0.4.0
 pybase64==1.2.2
 statsmodels==0.13.2
