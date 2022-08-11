@@ -57,7 +57,7 @@
     <div class="input-group">
       <span class="input-group-addon"><b>DEVICE</b></span>
       <select name="DeviceId" class="selectpicker form-control"
-        onchange="setPlaceHolder(this, {{ data['total_configs']|tojson }});">
+        onchange="setPlaceHolder(this, {{ data['total_configs'] }});">
         {% for device in data["devices"] %}
         <option value="{{ device }}">{{ device }}</option>
         {% endfor %}

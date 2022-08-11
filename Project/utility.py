@@ -25,7 +25,7 @@ ArimaDFPost = pd.DataFrame()
 post_parameters = {
              'MAC':"",
              'user_id':"",
-             'sample_frequency': "5000",
+             'sample_frequency': "15000",
              'min_gas_value': "0",
              'max_gas_value': "10000",
              'protocol': "HTTP"

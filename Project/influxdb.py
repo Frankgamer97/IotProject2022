@@ -124,7 +124,7 @@ def send_influxdb(json_data, measurement=influx_parameters["measurement"]):
             print("[send_influxdb] exception: post failed")
     else:
         ArimaCountUpdates += 1
-        ArimaDFPost = ArimaDFPost.append(json_post)
+        ArimaDFPost = pd.concat([ArimaDFPost,json_post]) # ArimaDFPost.append(json_post)
 
 if __name__=="__main__":
     list_series_real, list_series_predicted=get_dataframe_from_influxdb(measurement=influx_parameters["measurement"])
