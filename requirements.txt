@@ -6,7 +6,7 @@ dataframe-image==0.1.1
 aiocoap==0.4.3
 paho-mqtt==1.6.1
 flask==2.0.3
-flask-bootstrap==3.3.7.1.dev1
+flask-bootstrap==3.3.7.1
 influxdb-client==1.30.0
 jinja2==3.1.1
 meteostat==1.6.3
